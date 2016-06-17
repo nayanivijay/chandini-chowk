@@ -289,16 +289,18 @@ Then(/^I should see correct data for "([^"]*)" user$/) do |arg1|
 end
 
 Then(/^I should see "([^"]*)" message for "([^"]*)" API$/) do |expected_message, api|
-  if api == "create-user"	
+  if api == "create-user"	|| ((api == "save-billing-information" || api == "update-billing-information") && expected_message == "Un-authorized")
   	message=@ans["error"]["title"]
   	puts "Printing error title: #{message}"
 
   	puts "Printing error message: #{@ans["messages"]}"
-  elsif api == "login" || api == "change-password" || api == "edit-user"
+  elsif api == "login" || api == "change-password" || api == "edit-user" || api == "save-billing-information" || api == "delete-billing-information" || api == "update-billing-information"
   	message=@ans["messages"][0]
   	puts "Printing error message: #{message}"
   end
 
+  puts message
+  puts expected_message
   Test::Unit::Assertions.assert_match message, expected_message
 end
 
@@ -390,7 +392,7 @@ Then(/^I should see "([^"]*)"$/) do |arg1|
   	end
   end
 
-  Test::Unit::Assertions.assert_equal flag, 1
+  Test::Unit::Assertions.assert_equal 1, flag
 end
 
 ### edit-user API
@@ -663,3 +665,134 @@ When(/^I delete an entry for "([^"]*)"$/) do |arg1|
     
   Test::Unit::Assertions.assert_equal result.n, 1
 end
+
+
+When(/^I "([^"]*)" billing info with "([^"]*)"$/) do |operation, type|
+  if operation == "update" || operation == "delete"
+    @_id=@ans["data"]
+  end
+  
+  @name=Faker::Name.name
+	p=[('0'..'9')].map { |i| i.to_a }.flatten
+	@phone=(0...10).map { p[rand(p.length)] }.join
+  @email=Faker::Internet.email
+  @address=Faker::Address.street_address
+  @city=Faker::Address.city
+  @state=Faker::Address.state
+  @country=Faker::Address.country
+  user_token=@valid_user_token
+  #if type == "correct info"
+    #if operation == "create"
+
+  _id=@_id
+  
+  if type == "correct _id"
+    _id=@_id
+  elsif type == "incorrect _id"
+    _id=Faker::Lorem.characters(24)
+    #elsif type == "incomplete info"
+  elsif type == "invalid city"
+    @city=Faker::Address.city
+  elsif type == "invalid phone"
+		p=[('0'..'9'),('a'..'z')].map { |i| i.to_a }.flatten
+		@phone=(0...10).map { p[rand(p.length)] }.join
+  elsif type == "invalid email"
+    @email=Faker::Lorem.word
+  elsif type == "invalid user token"
+    user_token=Faker::Lorem.characters(316)
+  end
+  if operation == "create" || operation == "create another"
+    if type == "incomplete info"
+      puts "curl -X POST -H \"Authorization: #{user_token}\" -H \"Content-Type: application/json\" -d '{
+          \"name\":\"#{@name}\",
+          \"mobile\":\"#{@phone}\"
+          }' \"http://#{$server_host}:#{$port_number}/save-billing-information\""
+      output=`curl -X POST -H "Authorization: #{user_token}" -H "Content-Type: application/json" -d '{
+          "name" : "#{@name}",
+          "mobile" : "#{@phone}"
+          }' "http://#{$server_host}:#{$port_number}/save-billing-information"`
+    else
+      puts "curl -X POST -H \"Authorization: #{user_token}\" -H \"Content-Type: application/json\" -d '{
+            \"name\":\"#{@name}\",
+            \"mobile\":\"#{@phone}\",
+            \"email\":\"#{@email}\",
+            \"address\":\"#{@address}\",
+            \"city\":\"#{@city}\",
+            \"state\":\"#{@state}\",
+            \"country\":\"#{@country}\"
+            }' \"http://#{$server_host}:#{$port_number}/save-billing-information\""
+      output=`curl -X POST -H "Authorization: #{user_token}" -H "Content-Type: application/json" -d '{
+          "name" : "#{@name}",
+          "mobile" : "#{@phone}",
+          "email" : "#{@email}",
+          "address" : "#{@address}",
+          "city" : "#{@city}",
+          "state" : "#{@state}",
+          "country" : "#{@country}"
+          }' "http://#{$server_host}:#{$port_number}/save-billing-information"`
+    end
+  elsif operation == "delete"
+    puts "curl -X POST -H \"Authorization: #{user_token}\" -H \"Content-Type: application/json\" -d '{
+        \"_id\":\"#{_id}\"
+        }' \"http://#{$server_host}:#{$port_number}/delete-billing-information\""
+    output=`curl -X POST -H "Authorization: #{user_token}" -H "Content-Type: application/json" -d '{
+          "_id" : "#{_id}"
+          }' "http://#{$server_host}:#{$port_number}/delete-billing-information"`
+  elsif operation == "update"
+    puts "curl -X POST -H \"Authorization: #{user_token}\" -H \"Content-Type: application/json\" -d '{
+        \"_id\":\"#{_id}\",
+        \"mobile\":\"#{@phone}\",
+        \"email\":\"#{@email}\",
+        \"address\":\"#{@address}\",
+        \"city\":\"#{@city}\",
+        \"state\":\"#{@state}\",
+        \"country\":\"#{@country}\"
+        }' \"http://#{$server_host}:#{$port_number}/update-billing-information\""
+    output=`curl -X POST -H "Authorization: #{user_token}" -H "Content-Type: application/json" -d '{
+        "_id" : "#{_id}",
+        "mobile" : "#{@phone}",
+        "email" : "#{@email}",
+        "address" : "#{@address}",
+        "city" : "#{@city}",
+        "state" : "#{@state}",
+        "country" : "#{@country}"
+        }' "http://#{$server_host}:#{$port_number}/update-billing-information"`
+  end
+  puts "Printing response from API:"
+  puts output
+  @ans=JSON.parse(output)
+  if operation == "create another"
+    @ans_new=@ans
+  else
+    @ans_old=@ans
+  end
+end
+
+Then(/^I should "([^"]*)" entry for "([^"]*)"$/) do |arg1, api|
+  if api == "get-billing-information" 
+    @_id=@ans["data"]
+  end
+
+  flag=1
+  
+  mongo_client=Mongo::Client.new($mongo_connect_string)
+  billing=mongo_client[:billing_information]
+  list=billing.find.to_a
+  list.each do |l|
+    id=l["_id"].to_s
+    if id == @_id
+      puts "_id matched!"
+      if l["name"] == @name || l["mobile"] == @phone || ["email"] == @email ||  l["address"] == @address || l["city"] == @city || l["state"] == @state || l["country"] == @country
+        flag=0
+        break
+      end
+    end
+  end   
+  
+  if arg1 == "find"
+    Test::Unit::Assertions.assert_equal flag, 0
+  elsif arg1 == "not find"
+    Test::Unit::Assertions.assert_not_equal flag, 0
+  end
+end
+
