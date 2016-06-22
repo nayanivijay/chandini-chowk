@@ -46,13 +46,13 @@ When(/^I add entry to create new user with "([^"]*)" data$/) do |type|
   	$first_name=Faker::Name.first_name
   	$last_name=Faker::Name.last_name
   	if type == "alpha name"
-  		$last_name="O'Neil"
+  		$last_name="O'\Neil"
   	end
   	$company_name=Faker::Company.name
   	$phone="9999999999"
   	$company_type="agency"
   	$user_type="user"
-  	$email=Faker::Internet.email
+  	$email="chaynika+01@amagi.com"
   	$password=Faker::Internet.password
   elsif type == "same new"
   	first_name=$first_name
@@ -79,10 +79,10 @@ When(/^I add entry to create new user with "([^"]*)" data$/) do |type|
   	phone=Faker::Number.number(10)
   	company_type=""
   	user_type="user"
-  	email=Faker::Internet.email
+  	email="chaynika+01@amagi.com"
   	password=Faker::Internet.password
   elsif type == "invalid email"
-  	o=[('a'..'z'), ('A'..'Z'), ('0'..'9'), ('!'..'?')].map { |i| i.to_a }.flatten
+  	o=[('a'..'z'), ('A'..'Z'), ('0'..'9')].map { |i| i.to_a }.flatten
   	d=[('a'..'z')].map { |i| i.to_a }.flatten
   	usr=(0...8).map { o[rand(o.length)] }.join
   	domain=(0...5).map { d[rand(d.length)] }.join
@@ -100,7 +100,7 @@ When(/^I add entry to create new user with "([^"]*)" data$/) do |type|
   	company_name=Faker::Company.name
   	user_type="user"
   	phone="9999999999"
-  	email=Faker::Internet.email
+  	email="chaynika+01@amagi.com"
   	company_type="agency"
   	if type == "invalid phone"
   		p=[('0'..'9'), ('a'..'z')].map { |i| i.to_a }.flatten
@@ -116,7 +116,7 @@ When(/^I add entry to create new user with "([^"]*)" data$/) do |type|
   	phone="9999999999"
   	company_type="agency"
   	user_type="user"
-  	email=Faker::Internet.email
+  	email="chaynika+01@amagi.com"
   	password=Faker::Internet.password
   	if type == "empty password"
   		password=""
@@ -126,7 +126,7 @@ When(/^I add entry to create new user with "([^"]*)" data$/) do |type|
   end
 
   if type == "invalid JSON"
-  	email=Faker::Internet.email
+  	email="chaynika+01@amagi.com"
   	puts "Executing:"
   	puts "Printing a wrong format of JSON"
   	puts "curl -X POST -H \"Content-Type: application/json\" -d '{
@@ -218,7 +218,11 @@ When(/^I add entry to create new user with "([^"]*)" data$/) do |type|
   puts "Printing response from create-user API"
   puts output
   @ans=JSON.parse(output)
-  @valid_user_token=@ans["data"]["user_token"]
+  if type == "same new" || type == "invalid phone" || type == "empty password" || type == "empty user type" || type == "missing" || type == "same email" || type == "invalid JSON" || type == "invalid email"
+    puts "API should return error"
+  else
+    @valid_user_token=@ans["data"]["user_token"]
+  end
 end
 
 Then(/^I should see status "([^"]*)"$/) do |expected_status|
@@ -289,12 +293,12 @@ Then(/^I should see correct data for "([^"]*)" user$/) do |arg1|
 end
 
 Then(/^I should see "([^"]*)" message for "([^"]*)" API$/) do |expected_message, api|
-  if api == "create-user"	|| ((api == "save-billing-information" || api == "update-billing-information") && expected_message == "Un-authorized")
+  if api == "create-user"	|| ((api == "save-billing-information" || api == "update-billing-information") && expected_message == "Un-authorized") || api == "change-forgot-password"  || api == "save-campaign"
   	message=@ans["error"]["title"]
   	puts "Printing error title: #{message}"
 
   	puts "Printing error message: #{@ans["messages"]}"
-  elsif api == "login" || api == "change-password" || api == "edit-user" || api == "save-billing-information" || api == "delete-billing-information" || api == "update-billing-information"
+  elsif api == "login" || api == "change-password" || api == "edit-user" || api == "save-billing-information" || api == "delete-billing-information" || api == "update-billing-information" || api == "forgot-password"
   	message=@ans["messages"][0]
   	puts "Printing error message: #{message}"
   end
@@ -313,7 +317,7 @@ When(/^I login with "([^"]*)" email and "([^"]*)" password$/) do |arg1, arg2|
 	if arg1 == "correct"
 		email=$email
 	elsif arg1 == "incorrect"
-		email=Faker::Internet.email
+		email="chaynika+01@amagi.com"
 	end
 
 	if arg2 == "correct"
@@ -334,6 +338,10 @@ When(/^I login with "([^"]*)" email and "([^"]*)" password$/) do |arg1, arg2|
 	puts "Printing response from API:"
 	puts output
 	@ans=JSON.parse(output)
+  
+  if arg2 == "correct"
+    @valid_user_token=@ans["data"]["user_token"]
+  end
 end
 
 ###############################
@@ -345,7 +353,7 @@ When(/^I change password for "([^"]*)" email with "([^"]*)" password to "([^"]*)
   if email_type == "valid"
   	email=$email
   elsif email_type == "invalid"
-  	email=Faker::Internet.email
+  	email="chaynika+02@amagi.com"
   end
 
   if pswd_type == "correct"
@@ -397,6 +405,34 @@ end
 
 ### edit-user API
 
+When(/^I edit user with "([^"]*)" email$/) do |arg1|
+  if arg1 == "existing"
+    new_email="monodeep@amagi.com"
+  end
+  new_first_name=Faker::Name.first_name
+  new_last_name=Faker::Name.last_name
+  new_comp_name=Faker::Company.name
+  new_phone=Faker::Number.number(11)
+  new_comp_type="agency"
+  new_state="KA"
+  new_city=Faker::Address.city
+  user_token=@valid_user_token
+  
+	output=`curl -X POST -H "Authorization: #{user_token}" -H "Content-Type: application/json" -d '{
+		"first_name": "#{new_first_name}",
+		"last_name": "#{new_last_name}",
+		"company_name": "#{new_comp_name}",
+		"company_type": "#{new_comp_type}",
+		"email": "#{new_email}",
+		"state": "#{new_state}",
+		"city": "#{new_city}"
+		}' "http://#{$server_host}:#{$port_number}/edit-user"`
+  
+  puts "Printing response from API:"
+  puts output
+  @ans=JSON.parse(output)  
+end
+
 When(/^I edit user with "([^"]*)" user token$/) do |arg1|
 
 puts "CHANGE CODE AND REMOVE CITY AND STATE AND PUT PAN NO INSTEAD!!!"
@@ -413,7 +449,7 @@ puts "CHANGE CODE AND REMOVE CITY AND STATE AND PUT PAN NO INSTEAD!!!"
   new_comp_type="agency"
   new_state="KA"
   new_city=Faker::Address.city
-  new_email=Faker::Internet.email
+  new_email="chaynika+02@amagi.com"
 
   if arg1 == "valid empty"
   	new_first_name=""
@@ -675,7 +711,7 @@ When(/^I "([^"]*)" billing info with "([^"]*)"$/) do |operation, type|
   @name=Faker::Name.name
 	p=[('0'..'9')].map { |i| i.to_a }.flatten
 	@phone=(0...10).map { p[rand(p.length)] }.join
-  @email=Faker::Internet.email
+  @email="chaynika+01@amagi.com"
   @address=Faker::Address.street_address
   @city=Faker::Address.city
   @state=Faker::Address.state
@@ -794,5 +830,82 @@ Then(/^I should "([^"]*)" entry for "([^"]*)"$/) do |arg1, api|
   elsif arg1 == "not find"
     Test::Unit::Assertions.assert_not_equal flag, 0
   end
+end
+
+When(/^I "([^"]*)" for "([^"]*)"$/) do |arg1, arg2|
+  if arg1 == "forgot password"
+    if arg2 == "correct email"
+      email=$email
+    elsif arg2 == "incorrect email"
+      email="chaynika+02@amagi.com"
+    end
+    puts "Executing: 
+          curl -X POST -d '{
+          \"email\":\"#{email}\",
+          \"target_url\":\"www.google.com/token=\"
+          }' \"http://#{$server_host}:#{$port_number}/forgot-password\""
+          
+    output=`curl -X POST -d '{
+      "email":"#{email}",
+      "target_url":"www.google.com/token="
+      }' "http://#{$server_host}:#{$port_number}/forgot-password"`
+    puts output 
+    @ans=JSON.parse(output)
+    if arg2 == "correct email"
+      $token=@ans["data"]
+    end
+  end 
+end
+
+Then(/^"([^"]*)" for "([^"]*)" data should "([^"]*)"$/) do |arg1, arg2, arg3|
+  token=$token
+  email=$email
+  if arg2 == "incorrect token"
+    token=Faker::Lorem.characters(40)
+  end
+  puts "Verifying token.."
+  
+  puts "Executing: curl -X POST -d '{
+                \"token\":\"#{token}\"
+                }' \"http://#{$server_host}:#{$port_number}/is-valid-forgot-password-token\""
+                
+  output=`curl -X POST -d '{
+        "token" : "#{token}"
+        }' "http://#{$server_host}:#{$port_number}/is-valid-forgot-password-token"`
+        
+  puts output
+  result=JSON.parse(output)
+  message=result["messages"][0]
+  puts message
+  new_password=Faker::Internet.password
+  if message == "Valid token" 
+    if arg2 == "empty password"
+      new_password=""
+    end
+    puts "Changing password: 
+        Executing: curl -X POST -d '{
+        \"token\" : \"#{token}\",
+        \"new_password\" : \"#{new_password}\"
+        }' \"http://#{$server_host}:#{$port_number}/change-forgot-password\""
+        
+    output=`curl -X POST -d '{
+            "token" : "#{token}",
+            "new_password" : "#{new_password}"
+            }' "http://#{$server_host}:#{$port_number}/change-forgot-password"`
+    puts output
+    if arg2 == "empty password"
+      @ans=JSON.parse(output)
+      status=@ans["error"]["status"]
+      Test::Unit::Assertions.assert_equal status, 406
+    else
+      $password=new_password  
+    end
+  elsif message == "Invalid token" && arg2 == "incorrect token"
+    status=result["error"]["status"]
+    if arg3 == "not succeed"
+      Test::Unit::Assertions.assert_equal status, 401
+    end
+  end
+  
 end
 
