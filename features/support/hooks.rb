@@ -8,4 +8,5 @@ After do |tag|
   system("mysql -u #{$mysql_user} -p#{$mysql_password} dsp < #{sql_dump_dir}/user.sql")
   puts "Retrieving old dsp table.."
   system("mysql -u #{$mysql_user} -p#{$mysql_password} dsp < #{sql_dump_dir}/dsp.sql")
+  system("export LC_ALL=\"en_US.UTF-8\"; mongorestore --drop /usr/amagi/dsp_dumps/dsp/")
 end
