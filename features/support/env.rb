@@ -32,10 +32,18 @@ $mysql_user=mysql_string[0]
 $mysql_password=mysql_string[1]
 
 puts "DEBUG::: MYSQL database information:: Username #{$mysql_user} and password #{$mysql_password}"
-
+path_script=Dir.pwd+"/features/support"
+puts path_script
+ans= system("#{path_script}/mysql_dumps.sh", $mysql_user, $mysql_password)
+if ans != true
+  abort("Exiting tests!!")
+end
 puts "DEBUG::: Checking if it can connect to MongoDB in #{$server_host} as #{$mongo_connect_string}"
 
 mongo_client = Mongo::Client.new($mongo_connect_string)
+if mongo_client.cluster.servers.any? == false
+        abort("Unable to connect to Mongo DB server. Exiting tests!!")
+end
 
 
 
