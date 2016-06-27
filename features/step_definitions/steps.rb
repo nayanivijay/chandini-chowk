@@ -42,21 +42,27 @@ end
 
 
 When(/^I add entry to create new user with "([^"]*)" data$/) do |type|
-  if type == "new" || type == "white spaces email" || type == "alpha name"
-  	$first_name=Faker::Name.first_name
-  	$last_name=Faker::Name.last_name
-  	if type == "alpha name"
-  		$last_name="O'\Neil"
-  	end
+  if type == "new" || type == "white spaces email" || type == "alpha name" || type == "another new"
+    puts "Here"
+  	$name=Faker::Name.name
+  	#$last_name=Faker::Name.last_name
+  	#if type == "alpha name"
+  	#	$last_name="O'\Neil"
+  	#end
   	$company_name=Faker::Company.name
   	$phone="9999999999"
   	$company_type="agency"
   	$user_type="user"
-  	$email="chaynika+01@amagi.com"
+    if type == "another new"
+      puts "Here too"
+      $email="chaynika+02@amagi.com"
+    else
+  	 $email="chaynika+01@amagi.com"
+    end
   	$password=Faker::Internet.password
   elsif type == "same new"
-  	first_name=$first_name
-  	last_name=$last_name
+  	name=$name
+  	#last_name=$last_name
   	company_name=$company_name
   	phone=$phone
   	company_type=$company_type
@@ -64,8 +70,8 @@ When(/^I add entry to create new user with "([^"]*)" data$/) do |type|
   	email=$email
   	password=$password
   elsif type == "same email"
-  	first_name=Faker::Name.first_name
-  	last_name=Faker::Name.last_name
+  	name=Faker::Name.name
+  	#last_name=Faker::Name.last_name
   	company_name=Faker::Company.name
   	phone="9999999999"
   	company_type="sme"
@@ -73,8 +79,8 @@ When(/^I add entry to create new user with "([^"]*)" data$/) do |type|
   	email=$email
   	password=Faker::Internet.password
   elsif type == "missing"
-  	first_name=Faker::Name.last_name
-  	last_name=Faker::Name.last_name
+  	name=Faker::Name.name
+  	#last_name=Faker::Name.last_name
   	company_name=Faker::Company.name
   	phone=Faker::Number.number(10)
   	company_type=""
@@ -87,16 +93,16 @@ When(/^I add entry to create new user with "([^"]*)" data$/) do |type|
   	usr=(0...8).map { o[rand(o.length)] }.join
   	domain=(0...5).map { d[rand(d.length)] }.join
   	email=usr+'..aa@'+domain+'.com'
-  	first_name=$first_name
-  	last_name=$last_name
+  	name=$name
+  	#last_name=$last_name
   	company_name=$company_name
   	phone=$phone
   	company_type=$company_type
   	user_type=$user_type
   	password=$password
   elsif type == "invalid phone" || type == "invalid company_type"
-  	first_name=Faker::Name.first_name
-  	last_name=Faker::Name.last_name
+  	name=Faker::Name.name
+  	#last_name=Faker::Name.last_name
   	company_name=Faker::Company.name
   	user_type="user"
   	phone="9999999999"
@@ -110,8 +116,8 @@ When(/^I add entry to create new user with "([^"]*)" data$/) do |type|
   	end
   	password=Faker::Internet.password
   elsif type.include? "empty"
-  	first_name=Faker::Name.first_name
-  	last_name=Faker::Name.last_name
+  	name=Faker::Name.name
+  	#last_name=Faker::Name.last_name
   	company_name="sme"
   	phone="9999999999"
   	company_type="agency"
@@ -132,8 +138,7 @@ When(/^I add entry to create new user with "([^"]*)" data$/) do |type|
   	puts "curl -X POST -H \"Content-Type: application/json\" -d '{
 	\"email\": \"#{email}\",
 	\"password\": \"#{$password}\",
-	\"first_name\": \"#{$first_name}\",
-	\"last_name\": \"#{$last_name}\",
+	\"name\": \"#{$name}\",
 	\"company_name\": \"#{$company_name}\"
 	\"phone\": \"#{$phone}\",
 	\"company_type\": \"#{$company_type}\"
@@ -141,20 +146,18 @@ When(/^I add entry to create new user with "([^"]*)" data$/) do |type|
   	output=`curl -X POST -H "Content-Type: application/json" -d '{
 	"email": "#{email}",
 	"password": "#{$password}",
-	"first_name": "#{$first_name}",
-	"last_name": "#{$last_name}",
+	"name": "#{$name}",
 	"company_name": "#{$company_name}"
 	"phone": "#{$phone}",
 	"company_type": "#{$company_type}",
 	"user_type": "#{user_type}"
 	}' "http://#{$server_host}:#{$port_number}/create-user"`
-  elsif type == "new" || type == "alpha name"
+  elsif type == "new" || type == "alpha name" || type == "another new"
   	puts "Executing:"
   	puts "curl -X POST -H \"Content-Type: application/json\" -d '{
 	\"email\": \"#{$email}\",
 	\"password\": \"#{$password}\",
-	\"first_name\": \"#{$first_name}\",
-	\"last_name\": \"#{$last_name}\",
+	\"name\": \"#{$name}\",
 	\"company_name\": \"#{$company_name}\",
 	\"phone\": \"#{$phone}\",
 	\"company_type\": \"#{$company_type}\",
@@ -163,8 +166,7 @@ When(/^I add entry to create new user with "([^"]*)" data$/) do |type|
   	output=`curl -X POST -H "Content-Type: application/json" -d '{
 	"email": "#{$email}",
 	"password": "#{$password}",
-	"first_name": "#{$first_name}",
-	"last_name": "#{$last_name}",
+	"name": "#{$name}",
 	"company_name": "#{$company_name}",
 	"phone": "#{$phone}",
 	"company_type": "#{$company_type}",
@@ -175,8 +177,7 @@ When(/^I add entry to create new user with "([^"]*)" data$/) do |type|
   	puts "curl -X POST -H \"Content-Type: application/json\" -d '{
 	\"email\": \"  #{$email}\",
 	\"password\": \"#{$password}\",
-	\"first_name\": \"#{$first_name}\",
-	\"last_name\": \"#{$last_name}\",
+	\"name\": \"#{$name}\",
 	\"company_name\": \"#{$company_name}\",
 	\"phone\": \"#{$phone}\",
 	\"company_type\": \"#{$company_type}\",
@@ -185,8 +186,7 @@ When(/^I add entry to create new user with "([^"]*)" data$/) do |type|
   	output=`curl -X POST -H "Content-Type: application/json" -d '{
 	"email": "  #{$email}",
 	"password": "#{$password}",
-	"first_name": "#{$first_name}",
-	"last_name": "#{$last_name}",
+	"name": "#{$name}",
 	"company_name": "#{$company_name}",
 	"phone": "#{$phone}",
 	"company_type": "#{$company_type}",
@@ -197,8 +197,7 @@ When(/^I add entry to create new user with "([^"]*)" data$/) do |type|
   	puts "curl -X POST -H \"Content-Type: application/json\" -d '{
 	\"email\": \"#{email}\",
 	\"password\": \"#{password}\",
-	\"first_name\": \"#{first_name}\",
-	\"last_name\": \"#{last_name}\",
+	\"name\": \"#{name}\",
 	\"company_name\": \"#{company_name}\",
 	\"phone\": \"#{phone}\",
 	\"company_type\": \"#{company_type}\",
@@ -207,8 +206,7 @@ When(/^I add entry to create new user with "([^"]*)" data$/) do |type|
   	output=`curl -X POST -H "Content-Type: application/json" -d '{
 	"email": "#{email}",
 	"password": "#{password}",
-	"first_name": "#{first_name}",
-	"last_name": "#{last_name}",
+	"name": "#{name}",
 	"company_name": "#{company_name}",
 	"phone": "#{phone}",
 	"company_type": "#{company_type}",
@@ -240,7 +238,7 @@ Then(/^I should see correct data for "([^"]*)" user$/) do |arg1|
   	permission_rows=permissions.num_rows
 
   	puts "Number of permission rows is #{permission_rows}"
-  	gen_info_query="select email, first_name, last_name, company_name, phone, state, city, company_type, user_type, active from user where email='#{$email}'"
+  	gen_info_query="select email, name, company_name, phone, state, city, company_type, user_type, active from user where email='#{$email}'"
 
   	puts "Executing query::: #{gen_info_query}"
   	gen_info=con.query(gen_info_query)
@@ -283,7 +281,7 @@ Then(/^I should see correct data for "([^"]*)" user$/) do |arg1|
   end
   flag2=1
   puts "General information verification"
-  if info["email"] == geninfo[0] && info["first_name"] == geninfo[1] && info["last_name"] == geninfo[2] && info["company_name"] == geninfo[3] && info["phone"] == geninfo[4] && info["state"] == geninfo[5] && info["city"] == geninfo[6] && info["company_type"] == geninfo[7] && info["user_type"] && info["active"] == active
+  if info["email"] == geninfo[0] && info["name"] == geninfo[1] && info["company_name"] == geninfo[2] && info["phone"] == geninfo[3] && info["state"] == geninfo[4] && info["city"] == geninfo[5] && info["company_type"] == geninfo[6] && info["user_type"] == geninfo[7] && info["active"] == active
   	flag2=0
   	puts "General info matches"
   end
@@ -293,14 +291,11 @@ Then(/^I should see correct data for "([^"]*)" user$/) do |arg1|
 end
 
 Then(/^I should see "([^"]*)" message for "([^"]*)" API$/) do |expected_message, api|
-  if api == "create-user"	|| ((api == "save-billing-information" || api == "update-billing-information") && expected_message == "Un-authorized") || api == "change-forgot-password"  || api == "save-campaign"
+  if api == "create-user"	|| ((api == "save-billing-information" || api == "update-billing-information") && expected_message == "Un-authorized") || api == "change-forgot-password"  || ( api == "save-campaign" && expected_message == "Un-authorized" )
   	message=@ans["error"]["title"]
   	puts "Printing error title: #{message}"
-
-  	puts "Printing error message: #{@ans["messages"]}"
-  elsif api == "login" || api == "change-password" || api == "edit-user" || api == "save-billing-information" || api == "delete-billing-information" || api == "update-billing-information" || api == "forgot-password"
-  	message=@ans["messages"][0]
-  	puts "Printing error message: #{message}"
+  elsif api == "login" || api == "change-password" || api == "edit-user" || api == "save-billing-information" || api == "delete-billing-information" || api == "update-billing-information" || api == "forgot-password" || ( api == "save-campaign" && expected_message == "Campaign saved successfully" )
+    message=@ans["messages"][0]
   end
 
   puts message
@@ -409,8 +404,8 @@ When(/^I edit user with "([^"]*)" email$/) do |arg1|
   if arg1 == "existing"
     new_email="monodeep@amagi.com"
   end
-  new_first_name=Faker::Name.first_name
-  new_last_name=Faker::Name.last_name
+  new_name=Faker::Name.name
+  #new_last_name=Faker::Name.last_name
   new_comp_name=Faker::Company.name
   new_phone=Faker::Number.number(11)
   new_comp_type="agency"
@@ -419,8 +414,7 @@ When(/^I edit user with "([^"]*)" email$/) do |arg1|
   user_token=@valid_user_token
   
 	output=`curl -X POST -H "Authorization: #{user_token}" -H "Content-Type: application/json" -d '{
-		"first_name": "#{new_first_name}",
-		"last_name": "#{new_last_name}",
+		"name": "#{name}",
 		"company_name": "#{new_comp_name}",
 		"company_type": "#{new_comp_type}",
 		"email": "#{new_email}",
@@ -442,8 +436,8 @@ puts "CHANGE CODE AND REMOVE CITY AND STATE AND PUT PAN NO INSTEAD!!!"
   	user_token=Faker::Lorem.characters(316)
   end
 
-  new_first_name=Faker::Name.first_name
-  new_last_name=Faker::Name.last_name
+  new_name=Faker::Name.name
+  #new_last_name=Faker::Name.last_name
   new_comp_name=Faker::Company.name
   new_phone=Faker::Number.number(11)
   new_comp_type="agency"
@@ -452,7 +446,7 @@ puts "CHANGE CODE AND REMOVE CITY AND STATE AND PUT PAN NO INSTEAD!!!"
   new_email="chaynika+02@amagi.com"
 
   if arg1 == "valid empty"
-  	new_first_name=""
+  	name=""
   	new_phone=""
   end
 
@@ -460,8 +454,7 @@ puts "CHANGE CODE AND REMOVE CITY AND STATE AND PUT PAN NO INSTEAD!!!"
 
   if arg1 == "valid" || arg1 == "valid empty"
   	puts "curl -X POST -H \"Authorization: #{user_token}\" -H \"Content-Type: application/json\" -d '{
-  		\"first_name\": \"#{new_first_name}\",
-  		\"last_name\": \"#{new_last_name}\",
+  		\"name\": \"#{new_name}\",
   		\"company_name\": \"#{new_comp_name}\",
   		\"company_type\": \"#{new_comp_type}\",
   		\"email\": \"#{new_email}\",
@@ -470,8 +463,7 @@ puts "CHANGE CODE AND REMOVE CITY AND STATE AND PUT PAN NO INSTEAD!!!"
   		}' \"http://#{$server_host}:#{$port_number}/edit-user\""
 
   	output=`curl -X POST -H "Authorization: #{user_token}" -H "Content-Type: application/json" -d '{
-  		"first_name": "#{new_first_name}",
-  		"last_name": "#{new_last_name}",
+  		"name": "#{new_name}",
   		"company_name": "#{new_comp_name}",
   		"company_type": "#{new_comp_type}",
   		"email": "#{new_email}",
@@ -480,14 +472,11 @@ puts "CHANGE CODE AND REMOVE CITY AND STATE AND PUT PAN NO INSTEAD!!!"
   		}' "http://#{$server_host}:#{$port_number}/edit-user"`
   else
   	puts "curl -X POST -H \"Authorization: #{user_token}\" -H \"Content-Type: application/json\" -d '{
-  		\"first_name\": \"#{new_first_name}\",
-  		\"last_name\": \"#{new_last_name}\",
+  		\"name\": \"#{new_name}\",
   		\"city\": \"#{new_city}\"
   		}' \"http://#{$server_host}:#{$port_number}/edit-user\""
   	output=`curl -X POST -H "Authorization: #{user_token}" -H "Content-Type: application/json" -d '{
-  		"first_name": "#{new_first_name}",
-  		"last_name": "#{new_last_name}",
-  		"city": "#{new_city}"
+  		"name": "#{new_name}",
   		}' "http://#{$server_host}:#{$port_number}/edit-user"`
   end		
   puts "Printing response from API:"
@@ -911,4 +900,251 @@ Then(/^"([^"]*)" for "([^"]*)" data should "([^"]*)"$/) do |arg1, arg2, arg3|
   end
   
 end
+
+################################  CAMPAIGNS AND CREATIVES API ###################################
+
+
+When(/^I "([^"]*)" campaign with "([^"]*)" authorization token$/) do |action, user_token_type|
+  if user_token_type == "valid" || user_token_type == "new"
+    user_token=@valid_user_token
+    else
+      user_token=Faker::Lorem.characters(316)
+    end
+
+    @campaign_name="Automated_test_campaign"
+    @brand_name=Faker::Company.name
+
+    mongo_client = Mongo::Client.new($mongo_connect_string)
+
+    if action == "create with invalid product category"
+      @product_category=Faker::Lorem.word
+    else
+      product_cat_list=mongo_client[:product_category].find.to_a
+      product_cat_arr=Array.new
+      product_cat_list.each do |row|
+        element=row["product_category"]
+        product_cat_arr.insert(-1, element)
+      end
+
+      @product_category=product_cat_arr.sample
+    end
+      
+    if action == "create with invalid product sub category"
+      @product_sub_category=Faker::Lorem.word
+    else
+      product_sub_cat_list=mongo_client[:product_sub_category].find.to_a
+      product_sub_cat_arr=Array.new
+      product_sub_cat_list.each do |row|
+        element=row["product_sub_category"]
+        product_sub_cat_arr.insert(-1, element)
+      end
+
+      @product_sub_category=product_sub_cat_arr.sample
+    end
+
+    if action == "create with invalid campaign objective"
+      @campaign_objective=Faker::Lorem.word
+    else
+      campaign_objective_list=mongo_client[:campaign_objectives].find.to_a
+      camp_obj_arr=Array.new
+      campaign_objective_list.each do |row|
+        element=row["campaign_objectives"]
+        camp_obj_arr.insert(-1, element)
+      end
+
+      @campaign_objective=camp_obj_arr.sample
+    end
+
+    if action == "create with invalid currency"
+      @currency=Faker::Lorem.word
+    else
+      @currency="INR"
+    end
+
+    if action == "create with decimal campaign budget"
+      @campaign_budget=Faker::Number.decimal(6,2)
+    else
+      @campaign_budget=Faker::Number.number(6)
+    end
+    if action == "create with invalid start date"
+      @campaign_start_date=(Date.today-10).strftime("%m/%d/%Y")
+    else
+      @campaign_start_date=(Date.today+10).strftime("%m/%d/%Y")
+    end
+    if action == "create with small duration"
+      @duration=Faker::Number.between(0,6)
+    elsif action == "create with large duration"
+      @duration=Faker::Number.between(100,200)
+    else
+      @duration=Faker::Number.between(7,99)
+    end
+
+    if action == "create with invalid gender"
+      @gender=Faker::Lorem.word
+    else
+      @gender="Male"
+    end
+
+    if action == "create with invalid age"
+      @age=Faker::Lorem.word
+    else
+      @age="15-35"
+    end
+    if action == "create with invalid audience type"
+      @audience_type=Faker::Lorem.word
+    else
+      @audience_type="Urban"
+    end
+    @geography="DL"
+    @creative_format="Video"
+    if action == "update"
+      puts "Executing the following:"
+      puts "curl -X POST -H \"Authorization: #{user_token}\" -H \"Content-Type: application/json\" -d '{
+      \"_id\" : #{@campaign_id},
+      \"campaign_settings\": {
+        \"campaign_name\": \"#{@campaign_name}\",
+        \"brand_name\": \"#{@brand_name}\",
+        \"product_category\": \"#{@product_category}\",
+        \"product_sub_category\": \"#{@product_sub_category}\",
+        \"campaign_objective\": \"#{@campaign_objective}\",
+        \"gender\": [\"#{@gender}\"],
+        \"age\": [\"#{@age}\"],
+        \"audience_type\": [\"#{@audience_type}\"],
+        \"geography\": [\"#{@geography}\"],
+        \"creative_format\": [\"#{@creative_format}\"],
+        \"currency\": \"#{@currency}\",
+        \"campaign_budget\": #{@campaign_budget},
+        \"campaign_start_date\": \"#{@campaign_start_date}\",
+        \"duration\": #{@duration}
+      }
+      }' \"http://#{$server_host}:#{$port_number}/save-campaign\""
+
+      output=`curl -X POST -H "Authorization: #{user_token}" -H "Content-Type: application/json" -d '{ 
+              "_id": #{@campaign_id}, 
+              "campaign_settings": {
+                "campaign_name": "#{@campaign_name}",
+                "brand_name": "#{@brand_name}",
+                "product_category": "#{@product_category}",
+                "product_sub_category": "#{@product_sub_category}",
+                "campaign_objective": "#{@campaign_objective}",
+                "gender": ["#{@gender}"],
+                "age": ["#{@age}"],
+                "audience_type": ["#{@audience_type}"],
+                "geography": ["#{@geography}"],
+                "creative_format": ["#{@creative_format}"],
+                "currency": "#{@currency}",
+                "campaign_budget": #{@campaign_budget},
+                "campaign_start_date": "#{@campaign_start_date}",
+                "duration": #{@duration}
+              }
+              }' "http://#{$server_host}:#{$port_number}/save-campaign"`
+    else
+      puts "Executing the following:"
+      puts "curl -X POST -H \"Authorization: #{user_token}\" -H \"Content-Type: application/json\" -d '{
+      \"campaign_settings\": {
+        \"campaign_name\": \"#{@campaign_name}\",
+        \"brand_name\": \"#{@brand_name}\",
+        \"product_category\": \"#{@product_category}\",
+        \"product_sub_category\": \"#{@product_sub_category}\",
+        \"campaign_objective\": \"#{@campaign_objective}\",
+        \"gender\": [\"#{@gender}\"],
+        \"age\": [\"#{@age}\"],
+        \"audience_type\": [\"#{@audience_type}\"],
+        \"geography\": [\"#{@geography}\"],
+        \"creative_format\": [\"#{@creative_format}\"],
+        \"currency\": \"#{@currency}\",
+        \"campaign_budget\": #{@campaign_budget},
+        \"campaign_start_date\": \"#{@campaign_start_date}\",
+        \"duration\": #{@duration}
+      }
+      }' \"http://#{$server_host}:#{$port_number}/save-campaign\""
+
+
+      output=`curl -X POST -H "Authorization: #{user_token}" -H "Content-Type: application/json" -d '{"campaign_settings": {"campaign_name": "#{@campaign_name}","brand_name": "#{@brand_name}","product_category": "#{@product_category}","product_sub_category": "#{@product_sub_category}","campaign_objective": "#{@campaign_objective}","gender": ["#{@gender}"],"age": ["#{@age}"],"audience_type": ["#{@audience_type}"],"geography": ["#{@geography}"],"creative_format": ["#{@creative_format}"],"currency": "#{@currency}","campaign_budget": #{@campaign_budget},"campaign_start_date": "#{@campaign_start_date}","duration": #{@duration}}}' "http://#{$server_host}:#{$port_number}/save-campaign"`
+    end
+    puts "Printing response from API:"
+    puts output
+    @ans=JSON.parse(output)
+
+    if @ans["status"].to_i == 0
+      @campaign_id=@ans["data"]["campaign_id"]
+    end
+end
+
+
+When(/^I disallow user to do "([^"]*)"$/) do |permission|
+  find_id_query="select id from permission where url='/#{permission}'"
+  puts "Executing query::: #{find_id_query}"
+  begin
+    con=Mysql.new($server_host, $mysql_user, $mysql_password, $db_name)
+    perm_id=con.query(find_id_query)
+    id=perm_id.fetch_row[0]
+
+    puts "Disabling permissions for the role"
+    delete_query="delete from role_permission where permission_id='#{id}'"
+    puts "Executing query::: #{delete_query}"
+    con.query(delete_query)
+  rescue Mysql::Error => e
+    puts e.errno
+    puts e.error
+  ensure
+    con.close if con
+  end
+end
+
+Then(/^I should find the "([^"]*)" for the campaign in the "([^"]*)" collection$/) do |arg1, collection_name|
+  if collection_name == "campaigns" 
+    campaign_id=@ans["data"]["campaign_id"].to_i
+    puts "Campaign id is #{campaign_id}"
+    mongo_client = Mongo::Client.new($mongo_connect_string)
+    campaigns_arr=mongo_client[:campaigns].find.to_a
+    flag=1
+    campaigns_arr.each do |campaign|
+      puts "Campaign is #{campaign}"
+      camp_id=campaign["_id"].to_json 
+      camp_id=camp_id.to_i   
+      puts camp_id
+      #camp_id=JSON.parse(camp_id_json).values[0]
+      #puts camp_id_json
+      if camp_id == campaign_id
+        flag=0
+        puts "Match!"
+        break
+      end
+    end
+  end
+  Test::Unit::Assertions.assert_equal flag, 0
+end
+
+When(/^I "([^"]*)" campaign with "([^"]*)" authorization token and "([^"]*)"$/) do |action, user_token_type, type|
+  if user_token_type == "valid"
+    user_token=@valid_user_token
+  else
+    user_token=Faker::Lorem.characters(316)
+  end
+
+  if type == "invalid gender" || type == "invalid audience type"
+    gender=Faker::Lorem.word
+  elsif type == "invalid age"
+    age=Faker::Number.number(2)
+  elsif type == "decimal campaign budget"
+    campaign_budget=Faker::Number(6, 2)
+  elsif type == "small duration"
+    duration=Faker::Number.between(0,6)
+  elsif type == "large duration"
+    duration=Faker::Number.between(100,500)
+  elsif type == "product_category"
+    product_category=Faker::Company.catch_phrase
+  elsif type == "product_sub_category"
+    product_sub_category=Faker::Company.buzzword
+  elsif type == "campaign_objective"
+    campaign_objective=Faker::Company.bs
+  elsif type == "currency"
+    currency=Faker::Hacker.abbreviation
+  end
+
+end
+
+
+
 
