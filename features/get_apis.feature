@@ -126,3 +126,48 @@ And I run GET for "get-regions"
 Then I should see correct response for "get-regions"
 And I should see "deleted" data for "region" entry
 
+Scenario: Checking if get-country-state-mappings gives correct response
+Given I want to run DSP APIs
+When I run GET for "get-country-state-mappings"
+Then I should see correct response for "get-country-state-mappings"
+
+Scenario: Checking if adding new data in get-country-state-mappings gives correct response
+Given I want to run DSP APIs
+When I add an entry for "country_state_mappings"
+And I run GET for "get-country-state-mappings"
+Then I should see correct response for "get-country-state-mappings"
+When I delete an entry for "country_state_mappings"
+And I run GET for "get-country-state-mappings"
+Then I should see correct response for "get-country-state-mappings"
+And I should see "deleted" data for "country_state_mappings" entry
+
+Scenario: Checking if get-org-types gives correct response
+Given I want to run DSP APIs
+When I run GET for "get-org-types"
+Then I should see correct response for "get-org-types"
+
+Scenario: Checking if adding new data in get-org-types gives correct response
+Given I want to run DSP APIs
+When I add an entry for "organization_types"
+And I run GET for "get-org-types"
+Then I should see correct response for "get-org-types"
+When I delete an entry for "organization_types"
+And I run GET for "get-org-types"
+Then I should see correct response for "get-org-types"
+And I should see "deleted" data for "organization_types" entry
+
+Scenario: Checking if get-industry-types gives correct response
+Given I want to run DSP APIs
+When I run GET for "get-industry-types"
+Then I should see correct response for "get-industry-types"
+
+Scenario: Checking if adding new data in get-industry-types gives correct response
+Given I want to run DSP APIs
+When I add an entry for "industry_types"
+And I run GET for "get-industry-types"
+Then I should see correct response for "get-industry-types"
+When I delete an entry for "industry_types"
+And I run GET for "get-industry-types"
+Then I should see correct response for "get-industry-types"
+And I should see "deleted" data for "industry_types" entry
+
