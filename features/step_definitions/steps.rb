@@ -221,6 +221,11 @@ When(/^I add entry to create new user with "([^"]*)" data$/) do |type|
     puts "API should return error"
   else
     @valid_user_token=@ans["data"]["user_token"]
+    if type != "another new"
+      puts "Storing valid user token"
+      @valid_user_token_old=@ans["data"]["user_token"]
+      puts @valid_user_token_old
+    end
   end
 end
 
@@ -494,8 +499,14 @@ When(/^I run GET for "([^"]*)"$/) do |api|
     url=url+"?campaign_ids="+@campaign_ids
   end
   puts url
-  if api == "get-campaign-cost" || api == "get-campaign-transactions" || api == "get-user-stats" || api == "get-users-campaign-list" || api == "get-campaign-state" || api == "get-country-state-mappings"
-    output=`curl -X GET -H "Authorization: #{@valid_user_token}" -H "Content-Type: application/json" "#{url}"`
+  if api == "get-campaign-cost" || api == "get-campaign-transactions" || api == "get-user-stats" || api == "get-users-campaign-list" || api == "get-campaign-state" || api == "get-country-state-mappings" || api == "get-billing-informations"
+    if api == "get-billing-informations"
+      user_token=@valid_user_token_old
+    else
+      user_token=@valid_user_token
+    end
+ 
+    output=`curl -X GET -H "Authorization: #{user_token}" -H "Content-Type: application/json" "#{url}"`
     response=JSON.parse(output)
     puts response
     @ans=response
@@ -796,12 +807,19 @@ When(/^I "([^"]*)" billing info with "([^"]*)"$/) do |operation, type|
   @email="chaynika+01@amagi.com"
   @address=Faker::Address.street_address
   @city=Faker::Address.city
-  @state=Faker::Address.state
-  @country=Faker::Address.country
+  url="http://#{$server_host}:#{$port_number}/get-country-state-mappings"
+  uri = URI(url)
+  response = Net::HTTP.get_response(uri)
+  ans=JSON.parse(response.body)
+  ans=ans["data"].sample
+  @state=ans["state"]
+  @country=ans["country"]
   user_token=@valid_user_token
   #if type == "correct info"
     #if operation == "create"
 
+  puts user_token
+  puts @valid_user_token
   _id=@_id
   
   if type == "correct _id"
@@ -818,7 +836,11 @@ When(/^I "([^"]*)" billing info with "([^"]*)"$/) do |operation, type|
     @email=Faker::Lorem.word
   elsif type == "invalid user token"
     user_token=Faker::Lorem.characters(316)
+  elsif type == "old token"
+    user_token=@valid_user_token_old
   end
+
+  puts "User token is: #{user_token}"
   if operation == "create" || operation == "create another"
     if type == "incomplete info"
       puts "curl -X POST -H \"Authorization: #{user_token}\" -H \"Content-Type: application/json\" -d '{
@@ -857,7 +879,18 @@ When(/^I "([^"]*)" billing info with "([^"]*)"$/) do |operation, type|
           "_id" : "#{_id}"
           }' "http://#{$server_host}:#{$port_number}/delete-billing-information"`
   elsif operation == "update"
-    puts "curl -X POST -H \"Authorization: #{user_token}\" -H \"Content-Type: application/json\" -d '{
+    if type == "incomplete info"
+      puts "curl -X POST -H \"Authorization: #{user_token}\" -H \"Content-Type: application/json\" -d '{
+          \"name\":\"#{@name}\",
+          \"mobile\":\"#{@phone}\"
+          }' \"http://#{$server_host}:#{$port_number}/update-billing-information\""
+
+      output=`curl -X POST -H "Authorization: #{user_token}" -H "Content-Type: application/json" -d '{
+          "name" : "#{@name}",
+          "mobile" : "#{@phone}"
+          }' "http://#{$server_host}:#{$port_number}/update-billing-information"`
+    else
+      puts "curl -X POST -H \"Authorization: #{user_token}\" -H \"Content-Type: application/json\" -d '{
         \"_id\":\"#{_id}\",
         \"mobile\":\"#{@phone}\",
         \"email\":\"#{@email}\",
@@ -866,7 +899,7 @@ When(/^I "([^"]*)" billing info with "([^"]*)"$/) do |operation, type|
         \"state\":\"#{@state}\",
         \"country\":\"#{@country}\"
         }' \"http://#{$server_host}:#{$port_number}/update-billing-information\""
-    output=`curl -X POST -H "Authorization: #{user_token}" -H "Content-Type: application/json" -d '{
+      output=`curl -X POST -H "Authorization: #{user_token}" -H "Content-Type: application/json" -d '{
         "_id" : "#{_id}",
         "mobile" : "#{@phone}",
         "email" : "#{@email}",
@@ -875,6 +908,7 @@ When(/^I "([^"]*)" billing info with "([^"]*)"$/) do |operation, type|
         "state" : "#{@state}",
         "country" : "#{@country}"
         }' "http://#{$server_host}:#{$port_number}/update-billing-information"`
+    end
   end
   puts "Printing response from API:"
   puts output
