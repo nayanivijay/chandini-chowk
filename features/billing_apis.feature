@@ -120,3 +120,21 @@ And I should see "billing information saved successfully" message for "save-bill
 When I "update" billing info with "correct info"
 And I should see "billing information updated successfully" message for "update-billing-information" API
 
+Scenario: Create billing information as one user and edit the billing information as another user
+Given I want to run DSP APIs
+When I add entry to create new user with "new" data
+And I add entry to create new user with "another new" data
+And I "create" billing info with "correct info"
+Then I should see "billing information saved successfully" message for "save-billing-information" API
+And I "update" billing info with "old token"
+Then I should see "error"
+
+Scenario: Create billing information as one user and delete the billing information as another user
+Given I want to run DSP APIs
+When I add entry to create new user with "new" data
+And I add entry to create new user with "another new" data
+And I "create" billing info with "correct info"
+Then I should see "billing information saved successfully" message for "save-billing-information" API
+And I "delete" billing info with "old token"
+Then I should see "error"
+
