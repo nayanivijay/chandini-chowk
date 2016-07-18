@@ -6,5 +6,5 @@ After do |tag|
   puts "Cleaning up the mess you did"
   puts "Retrieving old user table.."
   system("mysql -u #{$mysql_user} -p#{$mysql_password} dsp < #{sql_dump_dir}/user.sql")
-  system("export LC_ALL=\"en_US.UTF-8\"; mongorestore --drop #{sql_dump_dir}/dsp/")
+  system("export LC_ALL=\"en_US.UTF-8\"; mongorestore --drop #{sql_dump_dir}/dsp")
 end
