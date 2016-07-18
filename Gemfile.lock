@@ -1,7 +1,7 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    addressable (2.4.0)
+    addressable (2.3.8)
     blankslate (2.1.2.4)
     bson (4.1.1)
     builder (3.2.2)
@@ -32,9 +32,7 @@ GEM
       multi_xml (>= 0.5.2)
     i18n (0.7.0)
     json (1.8.3)
-    mime-types (3.1)
-      mime-types-data (~> 3.2015)
-    mime-types-data (3.2016.0521)
+    mime-types (1.25.1)
     mini_portile2 (2.1.0)
     minitest (5.9.0)
     mongo (2.2.5)
@@ -50,7 +48,7 @@ GEM
     nokogiri (1.6.8)
       mini_portile2 (~> 2.1.0)
       pkg-config (~> 1.1.7)
-    oj (2.15.1)
+    oj (2.16.1)
     parslet (1.5.0)
       blankslate (~> 2.0)
     pickle (0.5.1)
@@ -62,17 +60,24 @@ GEM
     rack-cors (0.4.0)
     rack-test (0.6.3)
       rack (>= 1.0)
-    rake (11.2.0)
+    rake (11.2.2)
+    rest-client (1.6.9)
+      mime-types (~> 1.16)
     rspec-core (3.4.4)
       rspec-support (~> 3.4.0)
     rspec-expectations (3.4.0)
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.4.0)
     rspec-support (3.4.1)
-    test-unit (3.1.9)
+    syntax (1.2.1)
+    test-unit (3.2.0)
       power_assert
     toml (0.1.2)
       parslet (~> 1.5.0)
+    unirest (1.1.2)
+      addressable (~> 2.3.5)
+      json (~> 1.8.1)
+      rest-client (~> 1.6.7)
     webrat (0.7.3)
       nokogiri (>= 1.2.0)
       rack (>= 1.0)
@@ -101,9 +106,14 @@ DEPENDENCIES
   rack-cors (= 0.4.0)
   rspec-core
   rspec-expectations (= 3.4.0)
+  syntax
   test-unit
   toml
+  unirest
   webrat
 
+RUBY VERSION
+   ruby 2.3.0p0
+
 BUNDLED WITH
-   1.11.2
+   1.12.5
