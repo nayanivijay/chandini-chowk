@@ -11,6 +11,8 @@ require 'httparty'
 require 'unirest'
 include Test::Unit::Assertions
 
+@guest_flag=0
+
 Given(/^I want to run DSP APIs$/) do
 
 	puts "Server host: #{$server_host}:#{$port_number}"
@@ -297,10 +299,10 @@ Then(/^I should see correct data for "([^"]*)" user$/) do |arg1|
 end
 
 Then(/^I should see "([^"]*)" message for "([^"]*)" API$/) do |expected_message, api|
-  if api == "create-user"	|| ((api == "save-billing-information" || api == "update-billing-information") && expected_message == "Un-authorized") || api == "change-forgot-password"  || ( api == "save-campaign" && expected_message == "Un-authorized" )
+  if api == "create-user"	|| ((api == "save-billing-information" || api == "update-billing-information" || api == "edit-user") && expected_message == "Un-authorized") || api == "get-billing-informations" || api == "change-forgot-password"  || ( api == "save-campaign" && expected_message == "Un-authorized" )
   	message=@ans["error"]["title"]
   	puts "Printing error title: #{message}"
-  elsif api == "login" || api == "change-password" || api == "edit-user" || api == "save-billing-information" || api == "delete-billing-information" || api == "update-billing-information" || api == "forgot-password" || ( api == "save-campaign" && expected_message == "Campaign saved successfully" ) || api == "save-creative" || api == "unlink-creative" || api == "delete-campaign"
+  elsif api == "login" || api == "change-password" || api == "edit-user" || api == "save-billing-information" || api == "delete-billing-information" || api == "update-billing-information" || api == "create-guest-user" || api == "forgot-password" || ( api == "save-campaign" && expected_message == "Campaign saved successfully" ) || api == "save-creative" || api == "unlink-creative" || api == "delete-campaign"
     message=@ans["messages"][0]
   end
 
@@ -501,7 +503,12 @@ When(/^I run GET for "([^"]*)"$/) do |api|
   puts url
   if api == "get-campaign-cost" || api == "get-campaign-transactions" || api == "get-user-stats" || api == "get-users-campaign-list" || api == "get-campaign-state" || api == "get-country-state-mappings" || api == "get-billing-informations"
     if api == "get-billing-informations"
-      user_token=@valid_user_token_old
+      puts "Guest flag is #{@guest_flag}"
+      if @guest_flag == 0
+        user_token=@valid_user_token_old
+      else
+        user_token=@valid_user_token
+      end
     else
       user_token=@valid_user_token
     end
@@ -516,30 +523,35 @@ When(/^I run GET for "([^"]*)"$/) do |api|
     @api_status=response.code
     response=JSON.parse(response.body)
   end
-  if api == "get-regions" || api == "get-all-data" || api == "get-campaign-cost" || api == "get-campaign-transactions" || api == "get-campaign-state" || api == "get-country-state-mappings" 
-    @data=response["data"] 
-  elsif api == "get-age"
-    @data=response["data"]["age"]
-  elsif api == "get-languages"
-    @data=response["data"]["language"]
+  if api == "get-billing-informations" && @guest_flag == 1
+    @ans=response
+    puts @ans
   else
-    if api == "get-users-campaign-list" 
-      @data=response["data"]
-      @campaign_ids=""
-      @data.each do |row|
-        if @campaign_ids.empty?
-          @campaign_ids=row["_id"].to_s
-        else
-          @campaign_ids=row["_id"].to_s+','+campaign_ids
-        end
-      end
+    if api == "get-regions" || api == "get-all-data" || api == "get-campaign-cost" || api == "get-campaign-transactions" || api == "get-campaign-state" || api == "get-country-state-mappings" 
+      @data=response["data"] 
+    elsif api == "get-age"
+      @data=response["data"]["age"]
+    elsif api == "get-languages"
+      @data=response["data"]["language"]
     else
-      @data=response["data"].values.to_a
+      if api == "get-users-campaign-list" 
+        @data=response["data"]
+        @campaign_ids=""
+        @data.each do |row|
+          if @campaign_ids.empty?
+            @campaign_ids=row["_id"].to_s
+          else
+            @campaign_ids=row["_id"].to_s+','+campaign_ids
+          end
+        end
+      else
+        @data=response["data"].values.to_a
+      end
     end
+    puts "=========================================================================="
+    puts @data
+    puts "=========================================================================="
   end
-  puts "=========================================================================="
-  puts @data
-  puts "=========================================================================="
 end
 
 Then(/^I should see correct response for "([^"]*)"$/) do |api|
@@ -1035,7 +1047,38 @@ When(/^I "([^"]*)" campaign with "([^"]*)" authorization token$/) do |action, us
       user_token=Faker::Lorem.characters(316)
     end
 
-    @campaign_name="Automated_test_campaign"
+    if action == "create edited campaign name" 
+      @campaign_name="Auto_Campaign"
+      puts "Executing:  
+              curl -X GET -H \"Content-Type: application/json\" -H \"Authorization: #{@valid_user_token}\" \"http://#{$server_host}:#{$port_number}/is-valid-campaign-name?campaign_name=#{@campaign_name}\""
+    
+      response=Unirest.get "http://#{$server_host}:#{$port_number}/is-valid-campaign-name?campaign_name=#{@campaign_name}", headers: { "Content-Type" => "application/json", "Authorization" => "#{@valid_user_token}" }
+    
+      puts response.body
+      @resp=response.body["data"]
+      puts @resp
+
+      Test::Unit::Assertions.assert_equal @resp, true
+    elsif action == "create edited existing campaign name"
+      @campaign_name=@campaign_name_old
+      puts "Executing:  
+              curl -X GET -H \"Content-Type: application/json\" -H \"Authorization: #{@valid_user_token}\" \"http://#{$server_host}:#{$port_number}/is-valid-campaign-name?campaign_name=#{@campaign_name}\""
+      
+      response=Unirest.get "http://#{$server_host}:#{$port_number}/is-valid-campaign-name?campaign_name=#{@campaign_name}", headers: { "Content-Type" => "application/json", "Authorization" => "#{@valid_user_token}" }
+    
+      puts response.body
+      @resp=response.body["data"]
+      puts @resp
+
+      Test::Unit::Assertions.assert_equal @resp, false
+    else
+      output=`curl -X GET -H "Authorization: #{@valid_user_token}" "http://#{$server_host}:#{$port_number}/get-campaign-name"`
+      output=JSON.parse(output)
+      @campaign_name=output["data"]
+      puts @campaign_name
+      @campaign_name_old=@campaign_name
+    end
+
     @brand_name=Faker::Company.name
 
     mongo_client = Mongo::Client.new($mongo_connect_string)
@@ -1131,7 +1174,9 @@ When(/^I "([^"]*)" campaign with "([^"]*)" authorization token$/) do |action, us
     end
     @geography="Bangalore"
     @creative_format="Video"
-    if action == "update"
+    if action == "create edited existing campaign name"
+      assert("Campaign should not be created!")
+    elsif action == "update"
       puts "Executing the following:"
       puts "curl -X POST -H \"Authorization: #{user_token}\" -H \"Content-Type: application/json\" -d '{
       \"_id\" : #{@campaign_id},
@@ -1201,12 +1246,15 @@ When(/^I "([^"]*)" campaign with "([^"]*)" authorization token$/) do |action, us
 
       output=`curl -X POST -H "Authorization: #{user_token}" -H "Content-Type: application/json" -d '{"campaign_settings": {"campaign_name": "#{@campaign_name}","brand_name": "#{@brand_name}","product_category": "#{@product_category}","product_sub_category": "#{@product_sub_category}","campaign_objective": "#{@campaign_objective}","gender": ["#{@gender}"],"age": ["#{@age}"],"audience_type": ["#{@audience_type}"],"geography": ["#{@geography}"],"creative_format": ["#{@creative_format}"],"currency": "#{@currency}", "thousand": #{@thousand}, "lakh": #{@lakh}, "campaign_start_date": "#{@campaign_start_date}","duration": #{@duration}}}' "http://#{$server_host}:#{$port_number}/save-campaign"`
     end
-    puts "Printing response from API:"
-    puts output
-    @ans=JSON.parse(output)
 
-    if @ans["status"].to_i == 0
-      @campaign_id=@ans["data"]["campaign_id"]
+    if action != "create edited existing campaign name"
+      puts "Printing response from API:"
+      puts output
+      @ans=JSON.parse(output)
+
+      if @ans["status"].to_i == 0
+        @campaign_id=@ans["data"]["campaign_id"]
+      end
     end
 end
 
@@ -1421,7 +1469,7 @@ end
 
 Then(/^I should see "([^"]*)" for "([^"]*)" API$/) do |arg1, arg2|
   flag=1
-  if arg2 == "is-valid-creative"
+  if arg2 == "is-valid-creative" || arg2 == "is-valid-campaign-name"
     if arg1 == "data false"
       if @resp != false
         flag=1
@@ -1587,3 +1635,28 @@ Then(/^I should not find the campaign$/) do
 
   assert_equal match, 0
 end
+
+
+#### guest user flow ####
+
+When(/^I want to "([^"]*)" as guest user$/) do |action|
+  if action == "proceed"
+    puts "Executing the following: curl -X GET \"http://#{$server_host}:#{$port_number}/create-guest-user\""
+
+    output=`curl -X GET "http://#{$server_host}:#{$port_number}/create-guest-user"`
+    @ans=JSON.parse(output)
+    puts @ans
+    @valid_user_token=@ans["data"]["user_token"]
+    puts @valid_user_token
+    @guest_flag=1
+  end
+end
+
+Then(/^the guest user should not be able to access "([^"]*)"$/) do |arg1|
+
+  #if arg1 == "transactions"
+    
+  #elsif arg1 == "settings"
+  #end
+end
+
