@@ -14,11 +14,6 @@ Given I want to run DSP APIs
 When I add entry to create new user with "new" data
 Then I should see correct data for "given" user
 
-#Scenario: API::: create-user -> Giving all entries for create-user to create a new user with title "O'Neil" and checking if it returns SUCCESS
-#Given I want to run DSP APIs
-#When I add entry to create new user with "alpha name" data
-#Then I should see correct data for "given" user
-#
 Scenario: API::: create-user -> Giving all entries for create-user to create a new user with already existing data and checking if it does NOT return SUCCESS
 Given I want to run DSP APIs
 When I add entry to create new user with "new" data
@@ -63,11 +58,11 @@ When I add entry to create new user with "empty password" data
 Then I should see status "406"
 And I should see "Not Acceptable" message for "create-user" API
 
-Scenario: API::: create-user -> Given empty user_type for create-user to create a new user and checking if it does NOT return SUCCESS
-Given I want to run DSP APIs
-When I add entry to create new user with "empty user_type" data
-Then I should see status "406"
-And I should see "Not Acceptable" message for "create-user" API
+#Scenario: API::: create-user -> Given empty user_type for create-user to create a new user and checking if it does NOT return SUCCESS (INVALID TEST CASE)
+#Given I want to run DSP APIs
+#When I add entry to create new user with "empty user_type" data
+#Then I should see status "406"
+#And I should see "Not Acceptable" message for "create-user" API
 
 Scenario: API::: create-user -> Given invalid company_type for create-user to create a new user and checking if it does NOT return SUCCESS
 Given I want to run DSP APIs
@@ -154,25 +149,29 @@ When I add entry to create new user with "new" data
 When I edit user with "valid" user token
 Then I should see "Saved successfully" message for "edit-user" API
 
-#Scenario: API::: edit-user -> Giving valid user token and editing user with few missing information should NOT be allowed
-#Given I want to run DSP APIs
-#When I add entry to create new user with "new" data
-#When I edit user with "valid missing" user token
-#Then I should see "Saved successfully" message for "edit-user" API
-#And the empty fields should not be updated
-#
-#Scenario: API::: edit-user -> Giving valid user token and editing user with few empty fields should NOT be allowed
-#Given I want to run DSP APIs
-#When I add entry to create new user with "new" data
-#When I edit user with "valid empty" user token
-#Then I should see "error"
-##Then I should see "Saved successfully" message for "edit-user" API
-##And the empty fields should not be updated
-#
-Scenario: API::: edit-user -> Checking if editing email id and changing it to an email id of another existing user is accepted
+Scenario: API::: edit-user -> Giving valid user token and editing user with few missing information should NOT be allowed
+Given I want to run DSP APIs
+When I add entry to create new user with "new" data
+When I edit user with "valid missing" user token
+Then I should see "Saved successfully" message for "edit-user" API
+
+Scenario: API::: edit-user -> Giving valid user token and editing user with few empty fields should NOT be allowed
+Given I want to run DSP APIs
+When I add entry to create new user with "new" data
+When I edit user with "valid empty" user token
+Then I should see "error"
+Then I should see "Saved successfully" message for "edit-user" API
+
+Scenario: API::: edit-user -> Checking if editing email id and changing it to an email id of another existing user is accepted (FUTURE TEST CASE)
 Given I want to run DSP APIs
 When I add entry to create new user with "new" data
 And I edit user with "existing" email
+Then I should see "error"
+
+Scenario: API::: edit-user -> Checking if invalid pan throws error
+Given I want to run DSP APIs
+When I add entry to create new user with "new" data
+And I edit user with "invalid pan and valid" user token
 Then I should see "error"
 
 Scenario: API::: forgot-password -> Giving correct email id for login
