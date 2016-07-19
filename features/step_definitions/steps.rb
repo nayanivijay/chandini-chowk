@@ -26,7 +26,7 @@ Given(/^I want to run DSP APIs$/) do
   puts "Checking if test is able to connect to the database"
 
   begin
-  	con=Mysql.new($server_host, $mysql_user, $mysql_password, $db_name)
+  	con=Mysql.new($mysql_server, $mysql_user, $mysql_password, $db_name)
   	puts con.get_server_info
   	rs = con.query 'show tables'
   	puts "CONNECTED TO DATABASE!!!"
@@ -239,7 +239,7 @@ end
 Then(/^I should see correct data for "([^"]*)" user$/) do |arg1|
   flag=1
   begin
-  	con=Mysql.new($server_host, $mysql_user, $mysql_password, $db_name)
+  	con=Mysql.new($mysql_server, $mysql_user, $mysql_password, $db_name)
   	permissions_query="select p.id, p.url, p.name, p.permission_code, ct.content_type from user_role ur inner join role r on ur.role_id=r.id inner join role_permission rp on r.id=rp.role_id  inner join permission p on p.id=rp.permission_id inner join content_type ct on ct.id=p.content_type_id where ur.user_id in (select id from user where email='#{$email}');"
   	puts "Executing query:::  #{permissions_query}"
   	permissions=con.query(permissions_query)
@@ -1263,7 +1263,7 @@ When(/^I disallow user to do "([^"]*)"$/) do |permission|
   find_id_query="select id from permission where url='/#{permission}'"
   puts "Executing query::: #{find_id_query}"
   begin
-    con=Mysql.new($server_host, $mysql_user, $mysql_password, $db_name)
+    con=Mysql.new($mysql_server, $mysql_user, $mysql_password, $db_name)
     perm_id=con.query(find_id_query)
     id=perm_id.fetch_row[0]
 
@@ -1389,13 +1389,12 @@ When(/^I "([^"]*)" creative with "([^"]*)"$/) do |action, type|
     puts "Checking if creative name is valid for the user:
           curl -X GET -H \"Authorization: #{@valid_user_token}\" -H \"Content-Type: application/json\" \"http://#{$server_host}:#{$port_number}/is-valid-creative?creative_name=  #{@creative_name}\""
 
-
-    puts "Unirest.get \"http://#{$server_host}:#{$port_number}/is-valid-creative?creative_name=  #{@creative_name}\", headers: { \"Content-Type\" => \"application/json\", \"Authorization\" => \"#{@valid_user_token}\" }"
-    response=Unirest.get "http://#{$server_host}:#{$port_number}/is-valid-creative?creative_name=  #{@creative_name}", headers: { "Content-Type" => "application/json", "Authorization" => "#{@valid_user_token}" }
+    #puts "Unirest.get \"http://#{$server_host}:#{$port_number}/is-valid-creative?creative_name=  #{@creative_name}\", headers: { \"Content-Type\" => \"application/json\", \"Authorization\" => \"#{@valid_user_token}\" }"
+    #response=Unirest.get "http://#{$server_host}:#{$port_number}/is-valid-creative?creative_name=#{@creative_name}", headers: { "Content-Type" => "application/json", "Authorization" => "#{@valid_user_token}" }
     #response=Unirest.get "http://#{$server_host}:#{$port_number}/is-valid-creative?creative_name=  #{creative_name}", headers: { "Content-Type" => "application/json", "Authorization" => "#{@valid_user_token}" }
-
-    puts response.body
-    @resp=response.body["data"]
+    response=`curl -X GET -H "Authorization: #{@valid_user_token}" -H "Content-Type: application/json" "http://#{$server_host}:#{$port_number}/is-valid-creative?creative_name=#{@creative_name}"`
+    response=JSON.parse(response)
+    @resp=response["data"]
     puts @resp
     if @resp == true
       flag=1
@@ -1649,6 +1648,40 @@ When(/^I want to "([^"]*)" as guest user$/) do |action|
     @valid_user_token=@ans["data"]["user_token"]
     puts @valid_user_token
     @guest_flag=1
+  elsif action == "register"
+    puts ""
+    password=Faker::Internet.password
+    company_name=Faker::Company.name
+    name=Faker::Name.name
+    phone=Faker::Number.number(10)
+    a=[('A'..'Z')].map { |i| i.to_a }.flatten
+    b=[('0'..'9')].map { |i| i.to_a }.flatten
+    pan=(0...4).map { a[rand(a.length)] }.join+(0...4).map { b[rand(b.length)] }.join+(0...1).map { a[rand(a.length)] }.join
+    puts "Executing the following: 
+    curl -X POST -H \"Authorization: #{@valid_user_token}\" -H \"Content-Type: application/json\" -d '{
+    \"email\": \"chaynika+01@amagi.com\",
+    \"password\": \"#{password}\",
+    \"name\": \"#{name}\",
+    \"company_name\": \"#{company_name}\",
+    \"phone\": \"#{phone}\",
+    \"company_type\": \"Private\",
+    \"user_type\": \"user\",
+    \"pan\": \"#{pan}\",
+    \"industry_type\": \"Apparels\"
+    }' \"http://#{$server_host}:#{$port_number}/register-guest-user\""
+    output=`curl -X POST -H "Authorization: #{@valid_user_token}" -H "Content-Type: application/json" -d '{
+    "email": "chaynika+01@amagi.com",
+    "password": "#{password}",
+    "name": "#{name}",
+    "company_name": "#{company_name}",
+    "phone": "#{phone}",
+    "company_type": "Private",
+    "user_type": "user",
+    "pan": "#{pan}",
+    "industry_type": "Apparels"
+    }' "http://#{$server_host}:#{$port_number}/register-guest-user"`
+    puts output
+    @ans=JSON.parse(output)
   end
 end
 
