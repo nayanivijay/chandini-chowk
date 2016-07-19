@@ -35,7 +35,7 @@ puts "DEBUG:::...Printing environment variables..."
 puts "Running tests on #{$server_host}:#{$port_number} and DB configured for tests is #{$db_name}"
 
 mysql_conn_str=response["app"]["mysql_conn_str"]
-mysql_string=mysql_conn_str.split(':').map{|x|x.split '@(tcp'}.flatten.map(&:strip).reject(&:empty?)
+mysql_string=mysql_conn_str.split(':').map{|x|x.split '@tcp('}.flatten.map(&:strip).reject(&:empty?)
 $mysql_user=mysql_string[0]
 $mysql_password=mysql_string[1]
 $mysql_server=mysql_string[2]
