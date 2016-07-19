@@ -1,4 +1,8 @@
+## test_server is the ip address of the machine from where the tests are running ##
+## dsp_mc is the IP address of the machine where the DSP config file is present and username and password are the credentials of this machine
+### mongo_port_no is the port no where mongodb is connected with
 test_server: 127.0.0.1
-username: csaikia
-password: Chynksk.1007
+dsp_mc: 10.0.2.72
+username: chaynika
+password: amagi@123
 mongo_port_no: 27017
