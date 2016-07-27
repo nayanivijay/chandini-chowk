@@ -495,13 +495,13 @@ end
 
 When(/^I run GET for "([^"]*)"$/) do |api|
   url="http://#{$server_host}:#{$port_number}/#{api}"
-  if api == "get-campaign-cost" || api == "get-campaign-transactions"
+  if api == "get-campaign-cost" || api == "get-campaign-transactions" || api == "get-playout-schedule"
     url=url+"?campaign_id="+@campaign_id.to_s
   elsif api == "get-campaign-state"
     url=url+"?campaign_ids="+@campaign_ids
   end
   puts url
-  if api == "get-campaign-cost" || api == "get-campaign-transactions" || api == "get-user-stats" || api == "get-users-campaign-list" || api == "get-campaign-state" || api == "get-country-state-mappings" || api == "get-billing-informations"
+  if api == "get-playout-schedule" || api == "get-campaign-cost" || api == "get-campaign-transactions" || api == "get-user-stats" || api == "get-users-campaign-list" || api == "get-campaign-state" || api == "get-country-state-mappings" || api == "get-billing-informations"
     if api == "get-billing-informations"
       puts "Guest flag is #{@guest_flag}"
       if @guest_flag == 0
@@ -1656,7 +1656,7 @@ When(/^I want to "([^"]*)" as guest user$/) do |action|
     phone=Faker::Number.number(10)
     a=[('A'..'Z')].map { |i| i.to_a }.flatten
     b=[('0'..'9')].map { |i| i.to_a }.flatten
-    pan=(0...4).map { a[rand(a.length)] }.join+(0...4).map { b[rand(b.length)] }.join+(0...1).map { a[rand(a.length)] }.join
+    pan=(0...5).map { a[rand(a.length)] }.join+(0...4).map { b[rand(b.length)] }.join+(0...1).map { a[rand(a.length)] }.join
     puts "Executing the following: 
     curl -X POST -H \"Authorization: #{@valid_user_token}\" -H \"Content-Type: application/json\" -d '{
     \"email\": \"chaynika+01@amagi.com\",
@@ -1683,6 +1683,48 @@ When(/^I want to "([^"]*)" as guest user$/) do |action|
     puts output
     @ans=JSON.parse(output)
   end
+end
+
+When(/^I add entry to register guest user with "([^"]*)" data$/) do |arg1|
+   password=Faker::Internet.password
+   company_name=Faker::Company.name
+   name=Faker::Name.name
+   phone=Faker::Number.number(10)
+   email="chaynika+01@amagi.com"
+   a=[('A'..'Z')].map { |i| i.to_a }.flatten
+    b=[('0'..'9')].map { |i| i.to_a }.flatten
+    pan=(0...5).map { a[rand(a.length)] }.join+(0...4).map { b[rand(b.length)] }.join+(0...1).map { a[rand(a.length)] }.join
+   if arg1 == "invalid email"
+	email=Faker::Lorem.word
+   elsif arg1 == "invalid phone"
+	phone=Faker::Lorem.characters(10)
+   end
+
+   puts "Executing the following: 
+    curl -X POST -H \"Authorization: #{@valid_user_token}\" -H \"Content-Type: application/json\" -d '{
+    \"email\": \"#{email}\",
+    \"password\": \"#{password}\",
+    \"name\": \"#{name}\",
+    \"company_name\": \"#{company_name}\",
+    \"phone\": \"#{phone}\",
+    \"company_type\": \"Private\",
+    \"user_type\": \"user\",
+    \"pan\": \"#{pan}\",
+    \"industry_type\": \"Apparels\"
+    }' \"http://#{$server_host}:#{$port_number}/register-guest-user\""
+    output=`curl -X POST -H "Authorization: #{@valid_user_token}" -H "Content-Type: application/json" -d '{
+    "email": "#{email}",
+    "password": "#{password}",
+    "name": "#{name}",
+    "company_name": "#{company_name}",
+    "phone": "#{phone}",
+    "company_type": "Private",
+    "user_type": "user",
+    "pan": "#{pan}",
+    "industry_type": "Apparels"
+    }' "http://#{$server_host}:#{$port_number}/register-guest-user"`
+    puts output
+    @ans=JSON.parse(output)
 end
 
 Then(/^the guest user should not be able to access "([^"]*)"$/) do |arg1|
