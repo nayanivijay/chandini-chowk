@@ -40,9 +40,23 @@ Given I want to run DSP APIs
 When I want to "proceed" as guest user
 Then I should see "Account created successfully" message for "create-guest-user" API
 When I add entry to register guest user with "invalid email" data
-Then I should see "400"
+Then I should see "error"
 
-#Scenario: invalid phone number for register-guest-user
-#Scenario: Register guest user with already existing user
+Scenario: invalid phone number for register-guest-user
+Given I want to run DSP APIs
+When I want to "proceed" as guest user
+Then I should see "Account created successfully" message for "create-guest-user" API
+When I add entry to register guest user with "invalid phone" data
+Then I should see "error"
+
+Scenario: Register guest user with already existing user
+Given I want to run DSP APIs
+When I add entry to create new user with "new" data
+Then I should see correct data for "given" user
+When I want to "proceed" as guest user
+Then I should see "Account created successfully" message for "create-guest-user" API
+When I want to "register" as guest user
+Then I should see "error"
+
 
 
