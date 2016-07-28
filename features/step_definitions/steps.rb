@@ -6,7 +6,6 @@ require 'faker'
 require 'test/unit'
 require 'test/unit/assertions'
 require 'json'
-require 'net/http'
 require 'httparty'
 require 'unirest'
 include Test::Unit::Assertions
@@ -15,7 +14,7 @@ include Test::Unit::Assertions
 
 Given(/^I want to run DSP APIs$/) do
 
-	puts "Server host: #{$server_host}:#{$port_number}"
+  puts "Server host: #{$server_host}:#{$port_number}"
   puts "Checking if chandni-chowk is running"
 
   url="http://#{$server_host}:#{$port_number}"
@@ -26,199 +25,83 @@ Given(/^I want to run DSP APIs$/) do
   puts "Checking if test is able to connect to the database"
 
   begin
-  	con=Mysql.new($mysql_server, $mysql_user, $mysql_password, $db_name)
-  	puts con.get_server_info
-  	rs = con.query 'show tables'
-  	puts "CONNECTED TO DATABASE!!!"
+    con=Mysql.new($server_host, $mysql_user, $mysql_password, $db_name)
+    puts con.get_server_info
+    rs = con.query 'show tables'
+    puts "CONNECTED TO DATABASE!!!"
   rescue Mysql::Error => e
-  	puts e.errno
-  	puts e.error
+    puts e.errno
+    puts e.error
   ensure
-  	con.close if con
+    con.close if con
   end
 end
 
-############################
-# STEPS FOR following APIs:
-#     1. create-user API
-############################
+####################################
+#         Create user API          #
+####################################
 
+def data
+  ct=["Private","Public"]
+  ut=["low-income","high-income"]
+  it=["Apparels","Garments","Advertising"]
+  @email=Faker::Internet.free_email
+  @password=Faker::Internet.password(6,9)
+  @name=Faker::Name.name
+  @company_name=Faker::Company.name
+  @phone=Faker::Number.number(10)
+  @company_type=ct.shuffle.sample
+  @user_type=ut.shuffle.sample
+  @pan_number=Faker::Base.regexify("/[A-Z]{5}[0-9]{4}[A-Z]{1}/")
+  @industry_type=it.shuffle.sample
+end
 
 When(/^I add entry to create new user with "([^"]*)" data$/) do |type|
-  if type == "new" || type == "white spaces email" || type == "alpha name" || type == "another new"
+  data
+  if type == "new" || type == "white spaces email" || type == "alpha name" || type == "another new" || type = nil
     puts "Here"
-  	$name=Faker::Name.name
-  	#$last_name=Faker::Name.last_name
-  	#if type == "alpha name"
-  	#	$last_name="O'\Neil"
-  	#end
-  	$company_name=Faker::Company.name
-  	$phone="9999999999"
-  	$company_type="agency"
-  	$user_type="user"
-  
-    if type == "another new"
-      $email="chaynika+02@amagi.com"
-    else
-  	 $email="chaynika+01@amagi.com"
-    end
-  	$password=Faker::Internet.password
-  elsif type == "same new"
-  	name=$name
-  	#last_name=$last_name
-  	company_name=$company_name
-  	phone=$phone
-  	company_type=$company_type
-  	user_type=$user_type
-  	email=$email
-  	password=$password
   elsif type == "same email"
-  	name=Faker::Name.name
-  	#last_name=Faker::Name.last_name
-  	company_name=Faker::Company.name
-  	phone="9999999999"
-  	company_type="sme"
-  	user_type="user"
-  	email=$email
-  	password=Faker::Internet.password
-  elsif type == "missing"
-  	name=Faker::Name.name
-  	#last_name=Faker::Name.last_name
-  	company_name=Faker::Company.name
-  	phone=Faker::Number.number(10)
-  	company_type=""
-  	user_type="user"
-  	email="chaynika+01@amagi.com"
-  	password=Faker::Internet.password
+    @email=@email
   elsif type == "invalid email"
-  	o=[('a'..'z'), ('A'..'Z'), ('0'..'9')].map { |i| i.to_a }.flatten
-  	d=[('a'..'z')].map { |i| i.to_a }.flatten
-  	usr=(0...8).map { o[rand(o.length)] }.join
-  	domain=(0...5).map { d[rand(d.length)] }.join
-  	email=usr+'..aa@'+domain+'.com'
-  	name=$name
-  	#last_name=$last_name
-  	company_name=$company_name
-  	phone=$phone
-  	company_type=$company_type
-  	user_type=$user_type
-  	password=$password
-  elsif type == "invalid phone" || type == "invalid company_type"
-  	name=Faker::Name.name
-  	#last_name=Faker::Name.last_name
-  	company_name=Faker::Company.name
-  	user_type="user"
-  	phone="9999999999"
-  	email="chaynika+01@amagi.com"
-  	company_type="agency"
-  	if type == "invalid phone"
-  		p=[('0'..'9'), ('a'..'z')].map { |i| i.to_a }.flatten
-  		phone=(0...10).map { p[rand(p.length)] }.join
-  	else
-  		company_type=Faker::Hacker.verb
-  	end
-  	password=Faker::Internet.password
-  elsif type.include? "empty"
-  	name=Faker::Name.name
-  	#last_name=Faker::Name.last_name
-  	company_name="sme"
-  	phone="9999999999"
-  	company_type="agency"
-  	user_type="user"
-  	email="chaynika+01@amagi.com"
-  	password=Faker::Internet.password
-  	if type == "empty password"
-  		password=""
-  	elsif type == "empty user_type"
-  		user_type=""
-  	end
+    @email=Faker::Base.regexify("/[a-zA-Z0-9]{6}..1@[a-z]{5}.[a-z]{3}/")
+  elsif type == "invalid_password"
+    @password=Faker::Internet.password(1,5)
+  elsif type == "invalid phone"
+    @phone=Faker::Base.regexify("/[a-zA-Z0-9]{10}")
+  elsif type == "missing_email"
+    @email=""
+  elsif type == "missing_password"
+    @password=""
+  elsif type == "missing_name"
+    @name=""
+  elsif type == "missing_company_name"
+    @company_name=""
+  elsif type == "missing_phone"
+    @phone=""
+  elsif type == "missing_company_type"
+    @company_type=""
+  elsif type == "missing_user_type"
+    @user_type=""
+  elsif type == "missing_pan_number"
+    @pan_number=""
+  elsif type == "missing_industry_type"   
+    @industry_type=""
   end
+  output=`curl -X POST -H "Content-Type: application/json" -d '{
+            "email": "#{@email}",
+            "password": "#{@password}",
+            "name": "#{@name}",
+            "company_name": "#{@company_name}",
+            "phone": "#{@phone}",
+            "company_type": "#{@company_type}",
+            "user_type": "#{@user_type}",
+            "pan_number": "#{@pan_number}",
+            "industry_type": #{@industry_type}" 
+            }' "http://#{$server_host}:#{$port_number}/create-user"`
+    puts "Printing response from create-user API"
+    puts output
+    @ans=JSON.parse(output)
 
-  if type == "invalid JSON"
-  	email="chaynika+01@amagi.com"
-  	puts "Executing:"
-  	puts "Printing a wrong format of JSON"
-  	puts "curl -X POST -H \"Content-Type: application/json\" -d '{
-          	\"email\": \"#{email}\",
-          	\"password\": \"#{$password}\",
-          	\"name\": \"#{$name}\",
-          	\"company_name\": \"#{$company_name}\"
-          	\"phone\": \"#{$phone}\",
-          	\"company_type\": \"#{$company_type}\"
-          	}' \"http://#{$server_host}:#{$port_number}/create-user\""
-  	output=`curl -X POST -H "Content-Type: application/json" -d '{
-          	"email": "#{email}",
-          	"password": "#{$password}",
-          	"name": "#{$name}",
-          	"company_name": "#{$company_name}"
-          	"phone": "#{$phone}",
-          	"company_type": "#{$company_type}",
-          	"user_type": "#{user_type}"
-          	}' "http://#{$server_host}:#{$port_number}/create-user"`
-  elsif type == "new" || type == "alpha name" || type == "another new"
-  	puts "Executing:"
-  	puts "curl -X POST -H \"Content-Type: application/json\" -d '{
-        	\"email\": \"#{$email}\",
-        	\"password\": \"#{$password}\",
-        	\"name\": \"#{$name}\",
-        	\"company_name\": \"#{$company_name}\",
-        	\"phone\": \"#{$phone}\",
-        	\"company_type\": \"#{$company_type}\",
-        	\"user_type\": \"#{$user_type}\"
-        	}' \"http://#{$server_host}:#{$port_number}/create-user\""
-  	output=`curl -X POST -H "Content-Type: application/json" -d '{
-          	"email": "#{$email}",
-          	"password": "#{$password}",
-          	"name": "#{$name}",
-          	"company_name": "#{$company_name}",
-          	"phone": "#{$phone}",
-          	"company_type": "#{$company_type}",
-          	"user_type": "#{$user_type}"
-          	}' "http://#{$server_host}:#{$port_number}/create-user"`
-  elsif type == "white spaces email"
-  	puts "Executing:"
-  	puts "curl -X POST -H \"Content-Type: application/json\" -d '{
-          	\"email\": \"  #{$email}\",
-          	\"password\": \"#{$password}\",
-          	\"name\": \"#{$name}\",
-          	\"company_name\": \"#{$company_name}\",
-          	\"phone\": \"#{$phone}\",
-          	\"company_type\": \"#{$company_type}\",
-          	\"user_type\": \"#{$user_type}\"
-          	}' \"http://#{$server_host}:#{$port_number}/create-user\""
-  	output=`curl -X POST -H "Content-Type: application/json" -d '{
-          	"email": "  #{$email}",
-          	"password": "#{$password}",
-          	"name": "#{$name}",
-          	"company_name": "#{$company_name}",
-          	"phone": "#{$phone}",
-          	"company_type": "#{$company_type}",
-          	"user_type": "#{$user_type}"
-          	}' "http://#{$server_host}:#{$port_number}/create-user"`
-  else
-  	puts "Executing:"
-  	puts "curl -X POST -H \"Content-Type: application/json\" -d '{
-        	\"email\": \"#{email}\",
-        	\"password\": \"#{password}\",
-        	\"name\": \"#{name}\",
-        	\"company_name\": \"#{company_name}\",
-        	\"phone\": \"#{phone}\",
-        	\"company_type\": \"#{company_type}\",
-        	\"user_type\": \"#{user_type}\"
-        	}' \"http://#{$server_host}:#{$port_number}/create-user\""
-  	output=`curl -X POST -H "Content-Type: application/json" -d '{
-        	"email": "#{email}",
-        	"password": "#{password}",
-        	"name": "#{name}",
-        	"company_name": "#{company_name}",
-        	"phone": "#{phone}",
-        	"company_type": "#{company_type}",
-        	"user_type": "#{user_type}"
-        	}' "http://#{$server_host}:#{$port_number}/create-user"`
-  end
-  puts "Printing response from create-user API"
-  puts output
-  @ans=JSON.parse(output)
   if type == "same new" || type == "invalid phone" || type == "empty password" || type == "empty user type" || type == "missing" || type == "same email" || type == "invalid JSON" || type == "invalid email"
     puts "API should return error"
   else
@@ -239,23 +122,23 @@ end
 Then(/^I should see correct data for "([^"]*)" user$/) do |arg1|
   flag=1
   begin
-  	con=Mysql.new($mysql_server, $mysql_user, $mysql_password, $db_name)
-  	permissions_query="select p.id, p.url, p.name, p.permission_code, ct.content_type from user_role ur inner join role r on ur.role_id=r.id inner join role_permission rp on r.id=rp.role_id  inner join permission p on p.id=rp.permission_id inner join content_type ct on ct.id=p.content_type_id where ur.user_id in (select id from user where email='#{$email}');"
-  	puts "Executing query:::  #{permissions_query}"
-  	permissions=con.query(permissions_query)
-  	permission_rows=permissions.num_rows
+    con=Mysql.new($server_host, $mysql_user, $mysql_password, $db_name)
+    permissions_query="select p.id, p.url, p.name, p.permission_code, ct.content_type from user_role ur inner join role r on ur.role_id=r.id inner join role_permission rp on r.id=rp.role_id  inner join permission p on p.id=rp.permission_id inner join content_type ct on ct.id=p.content_type_id where ur.user_id in (select id from user where email='#{$email}');"
+    puts "Executing query:::  #{permissions_query}"
+    permissions=con.query(permissions_query)
+    permission_rows=permissions.num_rows
 
-  	puts "Number of permission rows is #{permission_rows}"
-  	gen_info_query="select email, name, company_name, phone, state, city, company_type, user_type, active from user where email='#{$email}'"
+    puts "Number of permission rows is #{permission_rows}"
+    gen_info_query="select email, name, company_name, phone, state, city, company_type, user_type, active from user where email='#{$email}'"
 
-  	puts "Executing query::: #{gen_info_query}"
-  	gen_info=con.query(gen_info_query)
+    puts "Executing query::: #{gen_info_query}"
+    gen_info=con.query(gen_info_query)
 
   rescue Mysql::Error => e
-  	puts e.errno
-  	puts e.error
+    puts e.errno
+    puts e.error
   ensure
-  	con.close if con
+    con.close if con
   end
 
   info=@ans["data"]
@@ -265,33 +148,33 @@ Then(/^I should see correct data for "([^"]*)" user$/) do |arg1|
   puts info
   puts perm
   permission_rows.times do 
-  	ans=permissions.fetch_row
-  	puts "+++DEBUG+++ rows from database"
-  	puts ans
-  	flag=1
-  	perm.each do |permission|
-  		if ans[0].to_i == permission["permission_id"].to_i && ans[1] == permission["url"] && ans[2] == permission["name"] && ans[3] == permission["permission_code"] && ans[4] == permission["content_type"]
-  			flag=0
-  			puts "Permission code for this row matches!"
-  		end
-  	end
+    ans=permissions.fetch_row
+    puts "+++DEBUG+++ rows from database"
+    puts ans
+    flag=1
+    perm.each do |permission|
+      if ans[0].to_i == permission["permission_id"].to_i && ans[1] == permission["url"] && ans[2] == permission["name"] && ans[3] == permission["permission_code"] && ans[4] == permission["content_type"]
+        flag=0
+        puts "Permission code for this row matches!"
+      end
+    end
 
-  	if flag == 1
-  		puts "Oops no match!"
-  		break
-  	end
+    if flag == 1
+      puts "Oops no match!"
+      break
+    end
   end
   geninfo=gen_info.fetch_row
   if geninfo[-1] = 0
-  	active=false
+    active=false
   else
-  	active=true
+    active=true
   end
   flag2=1
   puts "General information verification"
   if info["email"] == geninfo[0] && info["name"] == geninfo[1] && info["company_name"] == geninfo[2] && info["phone"] == geninfo[3] && info["state"] == geninfo[4] && info["city"] == geninfo[5] && info["company_type"] == geninfo[6] && info["user_type"] == geninfo[7] && info["active"] == active
-  	flag2=0
-  	puts "General info matches"
+    flag2=0
+    puts "General info matches"
   end
 
   Test::Unit::Assertions.assert_equal(flag,0)
@@ -299,9 +182,9 @@ Then(/^I should see correct data for "([^"]*)" user$/) do |arg1|
 end
 
 Then(/^I should see "([^"]*)" message for "([^"]*)" API$/) do |expected_message, api|
-  if api == "create-user"	|| ((api == "save-billing-information" || api == "update-billing-information" || api == "edit-user") && expected_message == "Un-authorized") || api == "get-billing-informations" || api == "change-forgot-password"  || ( api == "save-campaign" && expected_message == "Un-authorized" )
-  	message=@ans["error"]["title"]
-  	puts "Printing error title: #{message}"
+  if api == "create-user" || ((api == "save-billing-information" || api == "update-billing-information" || api == "edit-user") && expected_message == "Un-authorized") || api == "get-billing-informations" || api == "change-forgot-password"  || ( api == "save-campaign" && expected_message == "Un-authorized" )
+    message=@ans["error"]["title"]
+    puts "Printing error title: #{message}"
   elsif api == "login" || api == "change-password" || api == "edit-user" || api == "save-billing-information" || api == "delete-billing-information" || api == "update-billing-information" || api == "create-guest-user" || api == "forgot-password" || ( api == "save-campaign" && expected_message == "Campaign saved successfully" ) || api == "save-creative" || api == "unlink-creative" || api == "delete-campaign"
     message=@ans["messages"][0]
   end
@@ -312,196 +195,128 @@ Then(/^I should see "([^"]*)" message for "([^"]*)" API$/) do |expected_message,
 end
 
 ####################################
-#STEPS USED FOR:
-# 1. login API
+#            login API             #
 ####################################
 
-When(/^I login with "([^"]*)" email and "([^"]*)" password$/) do |arg1, arg2|
-	if arg1 == "correct"
-		email=$email
-	elsif arg1 == "incorrect"
-		email="chaynika+01@amagi.com"
-	end
-
-	if arg2 == "correct"
-		password=$password
-	elsif arg2 == "incorrect"
-		password=Faker::Internet.password
-	elsif arg2 == "correct with white spaces"
-		password=" "+$password
-	end
-
-	puts "Checking with response with #{email} and #{password}"
-
-	output=`curl -X POST -H "Content-Type: application/json" -d '{
-    "email": "#{email}",
-    "password": "#{password}"
-	}' "http://#{$server_host}:#{$port_number}/login"`
-
-	puts "Printing response from API:"
-	puts output
-	@ans=JSON.parse(output)
-  
-  if arg2 == "correct"
-    @valid_user_token=@ans["data"]["user_token"]
+When(/^I login with "([^"]*)" email and "([^"]*)" password$/) do |email, password|
+     
+  if email == "incorrect" 
+    @email=Faker::Internet.free_email
   end
+
+  if password == "incorrect"
+    @password=Faker::Internet.password(2,8)
+  elsif password == "correct with white spaces"
+    @password=" "+@password+" "
+  end
+  
+  puts "Checking with response with #{@email} and #{@password}"
+
+  output=`curl -X POST -H "Content-Type: application/json" -d '{
+    "email": "#{@email}",
+    "password": "#{@password}"
+  }' "http://#{$server_host}:#{$port_number}/login"`
+
+  puts "Printing response from API:"
+  puts output
+  @ans=JSON.parse(output)
+ 
 end
 
-###############################
-# STEPS USED FOR:
-# 1. change-password API
-###############################
+####################################
+#      Change password API         #
+#################################### 
 
-When(/^I change password for "([^"]*)" email with "([^"]*)" password to "([^"]*)" password$/) do |email_type, pswd_type, new_pass|
-  if email_type == "valid"
-  	email=$email
-  elsif email_type == "invalid"
-  	email="chaynika+02@amagi.com"
+When(/^I change password for "([^"]*)" email with "([^"]*)" password to "([^"]*)" password$/) do |email_type, old_pass, new_pass|
+
+  if email_type == "invalid"
+    @email=Faker::Internet.free_email
   end
 
-  if pswd_type == "correct"
-  	password=$password
-  elsif pswd_type == "incorrect"
-  	password=Faker::Internet.password
+  if old_pass == "incorrect"
+     @password=Faker::Internet.password(6,8)
   end
 
   if new_pass == "new valid"
-  	new_passwd=Faker::Internet.password
+    @new_passwd=Faker::Internet.password(6,8)
   elsif new_pass == "new invalid"
-  	new_passwd=" "
+    @new_passwd=Faker::Internet.password(2,5)
   end
 
-  $password=new_passwd
+  puts "Checking response for change-password API with email: #{@email} 
+            old password: #{@password} 
+            new password: #{@new_passwd}"
 
-  puts "Checking response for change-password API with email: #{email} 
-  					old password: #{password} 
-  					new password: #{new_passwd}"
-
-  puts "Executing the following:"
-  puts "curl -X POST -H \"Content-Type: application/json\" -d '{
-  		\"email\":\"#{email}\",
-  		\"old_password\":\"#{password}\",
-  		\"new_password\":\"#{new_passwd}\"
-  }' \"http://#{$server_host}:#{$port_number}/change-password\"`"
   output=`curl -X POST -H "Content-Type: application/json" -d '{
-  		"email":"#{email}",
-  		"old_password":"#{password}",
-  		"new_password":"#{new_passwd}"
+      "email":"#{@email}",
+      "old_password":"#{@password}",
+      "new_password":"#{@new_passwd}"
   }' "http://#{$server_host}:#{$port_number}/change-password"`
 
   puts "Printing response from API:"
   puts output
   @ans=JSON.parse(output)
+
+  if email_type == "valid" && old_pass == "correct" && new_pass == "valid"
+    @password=@new_passwd
+  end
 end
 
 Then(/^I should see "([^"]*)"$/) do |arg1|
   if arg1 == "error"
-  	if @ans["error"].nil?
-  		flag=0
-  	else
-  		flag=1
-  	end
+    if @ans["error"].nil?
+      flag=0
+    else
+      flag=1
+    end
   end
 
   Test::Unit::Assertions.assert_equal 1, flag
 end
 
-### edit-user API
+####################################
+#          Edit User API           #
+#################################### 
 
-When(/^I edit user with "([^"]*)" email$/) do |arg1|
-  if arg1 == "existing"
-    new_email="monodeep@amagi.com"
+When(/^I edit user with "([^"]*)" /) do |arg1|
+
+  if arg1 == "invalid token"
+    @valid_user_token=Faker::Lorem.characters(316)
   end
-  new_name=Faker::Name.name
-  #new_last_name=Faker::Name.last_name
-  new_comp_name=Faker::Company.name
-  new_phone=Faker::Number.number(11)
-  new_comp_type="agency"
-  new_state="KA"
-  new_city=Faker::Address.city
-  user_token=@valid_user_token
-  
-	output=`curl -X POST -H "Authorization: #{user_token}" -H "Content-Type: application/json" -d '{
-		"name": "#{name}",
-		"company_name": "#{new_comp_name}",
-		"company_type": "#{new_comp_type}",
-		"email": "#{new_email}",
-		"state": "#{new_state}",
-		"city": "#{new_city}"
-		}' "http://#{$server_host}:#{$port_number}/edit-user"`
-  
-  puts "Printing response from API:"
-  puts output
-  @ans=JSON.parse(output)  
-end
-
-When(/^I edit user with "([^"]*)" user token$/) do |arg1|
-
-
-  if arg1 == "valid" || arg1 == "valid missing" || arg1 == "valid empty" || arg1 == "invalid pan and valid"
-  	user_token=@valid_user_token
-  elsif arg1 == "invalid"
-  	user_token=Faker::Lorem.characters(316)
+  if arg1 == "invalid pan"
+    @pan_number=Faker::Base.regexify("/[A-Z]{4}[0-9]{5}[A-Z]{2}/")
+  end
+  if arg1 == "invalid phone"
+    @phone=Faker::Base.regexify("/[a-zA-Z0-9]{10}")
   end
 
-  new_name=Faker::Name.name
-  #new_last_name=Faker::Name.last_name
-  new_comp_name=Faker::Company.name
-  new_phone=Faker::Number.number(11)
-  new_comp_type="agency"
-  new_email="chaynika+02@amagi.com"
-  a=[('A'..'Z')].map { |i| i.to_a }.flatten
-  b=[('0'..'9')].map { |i| i.to_a }.flatten
-  new_pan=(0...4).map { a[rand(a.length)] }.join+(0...4).map { b[rand(b.length)] }.join+(0...1).map { a[rand(a.length)] }.join
-  if arg1 == "valid empty"
-  	name=""
-  	new_phone=""
-  end
-
-  if arg1 == "invalid pan and valid"
-    new_pan=Faker::Lorem.word
-  end
-
-  puts "Executing the following:"
-
-  if arg1 == "valid" || arg1 == "valid empty" || arg1 == "invalid pan and valid"
-  	puts "curl -X POST -H \"Authorization: #{user_token}\" -H \"Content-Type: application/json\" -d '{
-  		\"name\": \"#{new_name}\",
-  		\"company_name\": \"#{new_comp_name}\",
-  		\"company_type\": \"#{new_comp_type}\",
-  		\"email\": \"#{new_email}\",
-      \"pan\": \"#{new_pan}\"
-  		}' \"http://#{$server_host}:#{$port_number}/edit-user\""
-
-  	output=`curl -X POST -H "Authorization: #{user_token}" -H "Content-Type: application/json" -d '{
-  		"name": "#{new_name}",
-  		"company_name": "#{new_comp_name}",
-  		"company_type": "#{new_comp_type}",
-  		"email": "#{new_email}",
-      "pan": "#{new_pan}"
-  		}' "http://#{$server_host}:#{$port_number}/edit-user"`
-  else
-  	puts "curl -X POST -H \"Authorization: #{user_token}\" -H \"Content-Type: application/json\" -d '{
-  		\"name\": \"#{new_name}\",
-  		}' \"http://#{$server_host}:#{$port_number}/edit-user\""
-  	output=`curl -X POST -H "Authorization: #{user_token}" -H "Content-Type: application/json" -d '{
-  		"name": "#{new_name}"
-  		}' "http://#{$server_host}:#{$port_number}/edit-user"`
-  end		
+  puts "Checking response for edit user:"
+  output=`curl -X POST -H "Authorization: #{@valid_user_token}" -H "Content-Type: application/json" -d '{
+      "name": "#{@name}",
+      "company_name": "#{@company_name}",
+      "phone": "#{@phone}",
+      "company_type": "#{@company_type}",
+      "pan": "#{@pan_number}",
+      "industry_type": #{@industry_type}
+      }' "http://#{$server_host}:#{$port_number}/edit-user"`  
   puts "Printing response from API:"
   puts output
   @ans=JSON.parse(output)
 end
 
+####################################
+#          List data API           #
+#################################### 
+
 When(/^I run GET for "([^"]*)"$/) do |api|
   url="http://#{$server_host}:#{$port_number}/#{api}"
-  if api == "get-campaign-cost" || api == "get-campaign-transactions" || api == "get-playout-schedule"
+  if api == "get-campaign-cost" || api == "get-campaign-transactions"
     url=url+"?campaign_id="+@campaign_id.to_s
   elsif api == "get-campaign-state"
     url=url+"?campaign_ids="+@campaign_ids
   end
   puts url
-  if api == "get-playout-schedule" || api == "get-campaign-cost" || api == "get-campaign-transactions" || api == "get-user-stats" || api == "get-users-campaign-list" || api == "get-campaign-state" || api == "get-country-state-mappings" || api == "get-billing-informations"
+  if api == "get-campaign-cost" || api == "get-campaign-transactions" || api == "get-user-stats" || api == "get-users-campaign-list" || api == "get-campaign-state" || api == "get-country-state-mappings" || api == "get-billing-informations"
     if api == "get-billing-informations"
       puts "Guest flag is #{@guest_flag}"
       if @guest_flag == 0
@@ -807,120 +622,82 @@ When(/^I delete an entry for "([^"]*)"$/) do |arg1|
   Test::Unit::Assertions.assert_equal result.n, 1
 end
 
+### Billing apis
 
 When(/^I "([^"]*)" billing info with "([^"]*)"$/) do |operation, type|
-  if operation == "update" || operation == "delete"
-    @_id=@ans["data"]
-  end
   
-  @name=Faker::Name.name
-	p=[('0'..'9')].map { |i| i.to_a }.flatten
-	@phone=(0...10).map { p[rand(p.length)] }.join
-  @email="chaynika+01@amagi.com"
-  @address=Faker::Address.street_address
-  @city=Faker::Address.city
-  url="http://#{$server_host}:#{$port_number}/get-country-state-mappings"
-  uri = URI(url)
+  @bname=Faker::Name.name
+  @bmobile=Faker::Number.number(10)
+  @bemail=Faker::Internet.free_email
+  @baddress=Faker::Address.street_address
+  @bcity=Faker::Address.city
+  uri = URI("http://#{$server_host}:#{$port_number}/get-country-state-mappings")
   response = Net::HTTP.get_response(uri)
   ans=JSON.parse(response.body)
   ans=ans["data"].sample
-  @state=ans["state"]
-  @country=ans["country"]
-  user_token=@valid_user_token
-  #if type == "correct info"
-    #if operation == "create"
-
-  puts user_token
-  puts @valid_user_token
-  _id=@_id
+  @bstate=ans["state"]
+  @bcountry=ans["country"]
+  @user_token = @valid_user_token
   
-  if type == "correct _id"
-    _id=@_id
-  elsif type == "incorrect _id"
-    _id=Faker::Lorem.characters(24)
-    #elsif type == "incomplete info"
-  elsif type == "invalid city"
-    @city=Faker::Address.city
-  elsif type == "invalid phone"
-		p=[('0'..'9'),('a'..'z')].map { |i| i.to_a }.flatten
-		@phone=(0...10).map { p[rand(p.length)] }.join
-  elsif type == "invalid email"
-    @email=Faker::Lorem.word
-  elsif type == "invalid user token"
-    user_token=Faker::Lorem.characters(316)
-  elsif type == "old token"
-    user_token=@valid_user_token_old
+  if operation == "update" || operation == "delete"
+    output=`curl -X GET -H "Authorization: #{@user_token} -H "Content-Type: application/json" 
+            "http://#{$server_host}:#{$port_number}/get-billing-informations"`
+    @ans=JSON.parse(output)
+    @_id=@ans["data"][0]["_id"]
   end
+ 
+  if type == "incorrect _id"
+    @_id=Faker::Lorem.characters(24)
+  elsif type == "invalid phone"
+    @bmobile=Faker::Base.regexify("/[a-zA-Z0-9]{10}")
+  elsif type == "invalid email"
+    @bemail=Faker::Base.regexify("/[a-zA-Z0-9]{6}..[a-z]@[a-z]{5}.[a-z]{3}")
+  elsif type == "invalid user token"
+    @user_token=Faker::Lorem.characters(316)
+  elsif type == "missing_name"
+    @bname=""
+  elsif type == "missing_mobile"
+    @bmobile=""
+   elsif type == "missing_email"
+    @bemail=""
+  elsif type == "missing_address"
+    @baddress=""
+  elsif type == "missing_city"
+    @bcity=""
+  elsif type == "missing_state"
+    @bstate=""
+  elsif type == "missing_country"
+    @bcountry=""
+   end
 
-  puts "User token is: #{user_token}"
-  if operation == "create" || operation == "create another"
-    if type == "incomplete info"
-      puts "curl -X POST -H \"Authorization: #{user_token}\" -H \"Content-Type: application/json\" -d '{
-          \"name\":\"#{@name}\",
-          \"mobile\":\"#{@phone}\"
-          }' \"http://#{$server_host}:#{$port_number}/save-billing-information\""
-      output=`curl -X POST -H "Authorization: #{user_token}" -H "Content-Type: application/json" -d '{
-          "name" : "#{@name}",
-          "mobile" : "#{@phone}"
-          }' "http://#{$server_host}:#{$port_number}/save-billing-information"`
-    else
-      puts "curl -X POST -H \"Authorization: #{user_token}\" -H \"Content-Type: application/json\" -d '{
-            \"name\":\"#{@name}\",
-            \"mobile\":\"#{@phone}\",
-            \"email\":\"#{@email}\",
-            \"address\":\"#{@address}\",
-            \"city\":\"#{@city}\",
-            \"state\":\"#{@state}\",
-            \"country\":\"#{@country}\"
-            }' \"http://#{$server_host}:#{$port_number}/save-billing-information\""
-      output=`curl -X POST -H "Authorization: #{user_token}" -H "Content-Type: application/json" -d '{
-          "name" : "#{@name}",
-          "mobile" : "#{@phone}",
-          "email" : "#{@email}",
-          "address" : "#{@address}",
-          "city" : "#{@city}",
-          "state" : "#{@state}",
-          "country" : "#{@country}"
-          }' "http://#{$server_host}:#{$port_number}/save-billing-information"`
-    end
-  elsif operation == "delete"
-    puts "curl -X POST -H \"Authorization: #{user_token}\" -H \"Content-Type: application/json\" -d '{
-        \"_id\":\"#{_id}\"
-        }' \"http://#{$server_host}:#{$port_number}/delete-billing-information\""
+  if operation == "get"
+    output=`curl -X GET -H "Authorization: #{@user_token} -H "Content-Type: application/json" 
+            "http://#{$server_host}:#{$port_number}/get-billing-informations"`
+  elsif operation == "save" || operation == "save another"
     output=`curl -X POST -H "Authorization: #{user_token}" -H "Content-Type: application/json" -d '{
-          "_id" : "#{_id}"
-          }' "http://#{$server_host}:#{$port_number}/delete-billing-information"`
+        "name" : "#{@bname}",
+        "mobile" : "#{@bmobile}",
+        "email" : "#{@bemail}",
+        "address" : "#{@baddress}",
+        "city" : "#{@bcity}",
+        "state" : "#{@bstate}",
+        "country" : "#{@bcountry}"
+        }' "http://#{$server_host}:#{$port_number}/save-billing-information"`
+  elsif operation == "delete"
+    output=`curl -X POST -H "Authorization: #{@user_token}" -H "Content-Type: application/json" -d '{
+      "_id" : "#{@_id}"
+      }' "http://#{$server_host}:#{$port_number}/delete-billing-information"`
   elsif operation == "update"
-    if type == "incomplete info"
-      puts "curl -X POST -H \"Authorization: #{user_token}\" -H \"Content-Type: application/json\" -d '{
-          \"name\":\"#{@name}\",
-          \"mobile\":\"#{@phone}\"
-          }' \"http://#{$server_host}:#{$port_number}/update-billing-information\""
-
-      output=`curl -X POST -H "Authorization: #{user_token}" -H "Content-Type: application/json" -d '{
-          "name" : "#{@name}",
-          "mobile" : "#{@phone}"
-          }' "http://#{$server_host}:#{$port_number}/update-billing-information"`
-    else
-      puts "curl -X POST -H \"Authorization: #{user_token}\" -H \"Content-Type: application/json\" -d '{
-        \"_id\":\"#{_id}\",
-        \"mobile\":\"#{@phone}\",
-        \"email\":\"#{@email}\",
-        \"address\":\"#{@address}\",
-        \"city\":\"#{@city}\",
-        \"state\":\"#{@state}\",
-        \"country\":\"#{@country}\"
-        }' \"http://#{$server_host}:#{$port_number}/update-billing-information\""
-      output=`curl -X POST -H "Authorization: #{user_token}" -H "Content-Type: application/json" -d '{
-        "_id" : "#{_id}",
-        "mobile" : "#{@phone}",
-        "email" : "#{@email}",
-        "address" : "#{@address}",
-        "city" : "#{@city}",
-        "state" : "#{@state}",
-        "country" : "#{@country}"
+    output=`curl -X POST -H "Authorization: #{@user_token}" -H "Content-Type: application/json" -d '{
+      "_id" : "#{@_id}",
+      "name" : "#{@bname}",
+      "mobile" : "#{@bphone}",
+      "email" : "#{@bemail}",
+      "address" : "#{@baddress}",
+      "city" : "#{@bcity}",
+      "state" : "#{@bstate}",
+      "country" : "#{@bcountry}"
         }' "http://#{$server_host}:#{$port_number}/update-billing-information"`
-    end
   end
   puts "Printing response from API:"
   puts output
@@ -1263,7 +1040,7 @@ When(/^I disallow user to do "([^"]*)"$/) do |permission|
   find_id_query="select id from permission where url='/#{permission}'"
   puts "Executing query::: #{find_id_query}"
   begin
-    con=Mysql.new($mysql_server, $mysql_user, $mysql_password, $db_name)
+    con=Mysql.new($server_host, $mysql_user, $mysql_password, $db_name)
     perm_id=con.query(find_id_query)
     id=perm_id.fetch_row[0]
 
@@ -1389,12 +1166,13 @@ When(/^I "([^"]*)" creative with "([^"]*)"$/) do |action, type|
     puts "Checking if creative name is valid for the user:
           curl -X GET -H \"Authorization: #{@valid_user_token}\" -H \"Content-Type: application/json\" \"http://#{$server_host}:#{$port_number}/is-valid-creative?creative_name=  #{@creative_name}\""
 
-    #puts "Unirest.get \"http://#{$server_host}:#{$port_number}/is-valid-creative?creative_name=  #{@creative_name}\", headers: { \"Content-Type\" => \"application/json\", \"Authorization\" => \"#{@valid_user_token}\" }"
-    #response=Unirest.get "http://#{$server_host}:#{$port_number}/is-valid-creative?creative_name=#{@creative_name}", headers: { "Content-Type" => "application/json", "Authorization" => "#{@valid_user_token}" }
+
+    puts "Unirest.get \"http://#{$server_host}:#{$port_number}/is-valid-creative?creative_name=  #{@creative_name}\", headers: { \"Content-Type\" => \"application/json\", \"Authorization\" => \"#{@valid_user_token}\" }"
+    response=Unirest.get "http://#{$server_host}:#{$port_number}/is-valid-creative?creative_name=  #{@creative_name}", headers: { "Content-Type" => "application/json", "Authorization" => "#{@valid_user_token}" }
     #response=Unirest.get "http://#{$server_host}:#{$port_number}/is-valid-creative?creative_name=  #{creative_name}", headers: { "Content-Type" => "application/json", "Authorization" => "#{@valid_user_token}" }
-    response=`curl -X GET -H "Authorization: #{@valid_user_token}" -H "Content-Type: application/json" "http://#{$server_host}:#{$port_number}/is-valid-creative?creative_name=#{@creative_name}"`
-    response=JSON.parse(response)
-    @resp=response["data"]
+
+    puts response.body
+    @resp=response.body["data"]
     puts @resp
     if @resp == true
       flag=1
@@ -1636,102 +1414,55 @@ Then(/^I should not find the campaign$/) do
 end
 
 
-#### guest user flow ####
+############################
+# STEPS FOR following APIs:
+#     1. Guest-user
+############################
 
-When(/^I want to "([^"]*)" as guest user$/) do |action|
-  if action == "proceed"
-    puts "Executing the following: curl -X GET \"http://#{$server_host}:#{$port_number}/create-guest-user\""
-
-    output=`curl -X GET "http://#{$server_host}:#{$port_number}/create-guest-user"`
-    @ans=JSON.parse(output)
-    puts @ans
-    @valid_user_token=@ans["data"]["user_token"]
-    puts @valid_user_token
-    @guest_flag=1
-  elsif action == "register"
-    puts ""
-    password=Faker::Internet.password
-    company_name=Faker::Company.name
-    name=Faker::Name.name
-    phone=Faker::Number.number(10)
-    a=[('A'..'Z')].map { |i| i.to_a }.flatten
-    b=[('0'..'9')].map { |i| i.to_a }.flatten
-    pan=(0...5).map { a[rand(a.length)] }.join+(0...4).map { b[rand(b.length)] }.join+(0...1).map { a[rand(a.length)] }.join
-    puts "Executing the following: 
-    curl -X POST -H \"Authorization: #{@valid_user_token}\" -H \"Content-Type: application/json\" -d '{
-    \"email\": \"chaynika+01@amagi.com\",
-    \"password\": \"#{password}\",
-    \"name\": \"#{name}\",
-    \"company_name\": \"#{company_name}\",
-    \"phone\": \"#{phone}\",
-    \"company_type\": \"Private\",
-    \"user_type\": \"user\",
-    \"pan\": \"#{pan}\",
-    \"industry_type\": \"Apparels\"
-    }' \"http://#{$server_host}:#{$port_number}/register-guest-user\""
-    output=`curl -X POST -H "Authorization: #{@valid_user_token}" -H "Content-Type: application/json" -d '{
-    "email": "chaynika+01@amagi.com",
-    "password": "#{password}",
-    "name": "#{name}",
-    "company_name": "#{company_name}",
-    "phone": "#{phone}",
-    "company_type": "Private",
-    "user_type": "user",
-    "pan": "#{pan}",
-    "industry_type": "Apparels"
-    }' "http://#{$server_host}:#{$port_number}/register-guest-user"`
-    puts output
-    @ans=JSON.parse(output)
-  end
+def data
+  ct=["Private","Public"]
+  ut=["low-income","high-income"]
+  it=["Apparels","Garments","Advertising"]
+  @email=Faker::Internet.free_email
+  @password=Faker::Internet.password(6,9)
+  @name=Faker::Name.name
+  @company_name=Faker::Company.name
+  @phone=Faker::Number.number(10)
+  @company_type=ct.shuffle.sample
+  @user_type=ut.shuffle.sample
+  @pan_number=Faker::Base.regexify("/[A-Z]{5}[0-9]{4}[A-Z]{1}/")
+  @industry_type=it.shuffle.sample
 end
 
-When(/^I add entry to register guest user with "([^"]*)" data$/) do |arg1|
-   password=Faker::Internet.password
-   company_name=Faker::Company.name
-   name=Faker::Name.name
-   phone=Faker::Number.number(10)
-   email="chaynika+01@amagi.com"
-   a=[('A'..'Z')].map { |i| i.to_a }.flatten
-    b=[('0'..'9')].map { |i| i.to_a }.flatten
-    pan=(0...5).map { a[rand(a.length)] }.join+(0...4).map { b[rand(b.length)] }.join+(0...1).map { a[rand(a.length)] }.join
-   if arg1 == "invalid email"
-	email=Faker::Lorem.word
-   elsif arg1 == "invalid phone"
-	phone=Faker::Lorem.characters(10)
-   end
-
-   puts "Executing the following: 
-    curl -X POST -H \"Authorization: #{@valid_user_token}\" -H \"Content-Type: application/json\" -d '{
-    \"email\": \"#{email}\",
-    \"password\": \"#{password}\",
-    \"name\": \"#{name}\",
-    \"company_name\": \"#{company_name}\",
-    \"phone\": \"#{phone}\",
-    \"company_type\": \"Private\",
-    \"user_type\": \"user\",
-    \"pan\": \"#{pan}\",
-    \"industry_type\": \"Apparels\"
-    }' \"http://#{$server_host}:#{$port_number}/register-guest-user\""
-    output=`curl -X POST -H "Authorization: #{@valid_user_token}" -H "Content-Type: application/json" -d '{
-    "email": "#{email}",
-    "password": "#{password}",
-    "name": "#{name}",
-    "company_name": "#{company_name}",
-    "phone": "#{phone}",
-    "company_type": "Private",
-    "user_type": "user",
-    "pan": "#{pan}",
-    "industry_type": "Apparels"
-    }' "http://#{$server_host}:#{$port_number}/register-guest-user"`
-    puts output
-    @ans=JSON.parse(output)
-end
-
-Then(/^the guest user should not be able to access "([^"]*)"$/) do |arg1|
-
-  #if arg1 == "transactions"
-    
-  #elsif arg1 == "settings"
-  #end
-end
-
+When(/^I add entry to create new user with "([^"]*)" data$/) do |type|
+  data
+  if type == "new" 
+    puts "Here"
+  elsif type == "same_email"
+    @email=@email
+  elsif type == "invalid_email"
+    @email=Faker::Base.regexify("/[a-zA-Z0-9]{6}..[a-z]@[a-z]{5}.[a-z]{3}")
+  elsif type == "invalid_password"
+    @password=Faker::Internet.password(1,5)
+  elsif type == "invalid_phone"
+    @phone=Faker::Base.regexify("/[a-zA-Z0-9]{10}")
+  elsif type == "invalid pan_number"
+    @pan_number=Faker::Base.regexify("/[A-Z0-9a-z]{5}[A-Z]{4}[0-9]{1}/")
+  elsif type == "missing_email"
+    @email=""
+  elsif type == "missing_password"
+    @password=""
+  elsif type == "missing_name"
+    @name=""
+  elsif type == "missing_company_name"
+    @company_name=""
+  elsif type == "missing_phone"
+    @phone=""
+  elsif type == "missing_company_type"
+    @company_type=""
+  elsif type == "missing_user_type"
+    @user_type=""
+  elsif type == "missing_pan_number"
+    @pan_number=""
+  elsif type == "missing_industry_type"
+    @industry_type=""
