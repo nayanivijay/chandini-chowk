@@ -309,65 +309,27 @@ end
 #################################### 
 
 When(/^I run GET for "([^"]*)"$/) do |api|
-  url="http://#{$server_host}:#{$port_number}/#{api}"
-  if api == "get-campaign-cost" || api == "get-campaign-transactions"
-    url=url+"?campaign_id="+@campaign_id.to_s
-  elsif api == "get-campaign-state"
-    url=url+"?campaign_ids="+@campaign_ids
-  end
-  puts url
-  if api == "get-campaign-cost" || api == "get-campaign-transactions" || api == "get-user-stats" || api == "get-users-campaign-list" || api == "get-campaign-state" || api == "get-country-state-mappings" || api == "get-billing-informations"
-    if api == "get-billing-informations"
-      puts "Guest flag is #{@guest_flag}"
-      if @guest_flag == 0
-        user_token=@valid_user_token_old
-      else
-        user_token=@valid_user_token
-      end
-    else
-      user_token=@valid_user_token
-    end
- 
-    output=`curl -X GET -H "Authorization: #{user_token}" -H "Content-Type: application/json" "#{url}"`
-    response=JSON.parse(output)
-    puts response
-    @ans=response
-  else
-    uri = URI(url)
-    response = Net::HTTP.get_response(uri)
-    @api_status=response.code
-    response=JSON.parse(response.body)
-  end
-  if api == "get-billing-informations" && @guest_flag == 1
-    @ans=response
-    puts @ans
-  else
-    if api == "get-regions" || api == "get-all-data" || api == "get-campaign-cost" || api == "get-campaign-transactions" || api == "get-campaign-state" || api == "get-country-state-mappings" 
-      @data=response["data"] 
-    elsif api == "get-age"
-      @data=response["data"]["age"]
-    elsif api == "get-languages"
-      @data=response["data"]["language"]
-    else
-      if api == "get-users-campaign-list" 
-        @data=response["data"]
-        @campaign_ids=""
-        @data.each do |row|
-          if @campaign_ids.empty?
-            @campaign_ids=row["_id"].to_s
-          else
-            @campaign_ids=row["_id"].to_s+','+campaign_ids
-          end
-        end
-      else
-        @data=response["data"].values.to_a
+  
+  def getdata(type, data)
+  url = "http://#{@server_host}:#{@port_number}/#{type}"
+  output=`curl -X GET -H "Authorization: #{@user_token}" -H "Content-Type: application/json" "#{url}"`
+  response=JSON.parse(output)
+  result=Array.new
+  elements=Array.new
+  if type == "get-regions" || type == "get-country-state-mappings"
+    result=response["data"]
+    result.each do |l|
+      element=l["#{data}"]
+      if !(elements.include? element)
+        elements.insert(-1, element)
       end
     end
-    puts "=========================================================================="
-    puts @data
-    puts "=========================================================================="
+    return elements
+  else
+    result=response["data"][data]
+    return result
   end
-end
+end 
 
 Then(/^I should see correct response for "([^"]*)"$/) do |api|
   
@@ -393,107 +355,24 @@ Then(/^I should see correct response for "([^"]*)"$/) do |api|
     key="industry_types"
   end
 
+def readmongodata(collection, field)
   mongo_client = Mongo::Client.new($mongo_connect_string)
+  list=mongo_client[:"#{collection}"].find.to_a
+  elements=Array.new
+  list.each do |l|
+    element=l["#{field}"]
+      if (elements.include? element) == false
+        elements.insert(-1, element)
+      end
+  end
+  return elements
+end
 
-  if api == "get-all-data"
-    keys=@data.keys
-    puts keys
-    keys.each do |item|
-      from_json=@data["#{item}"]
-      arr_elements=Array.new
-      puts from_json
-      
-      if item == "age" || item == "language"
-        list=mongo_client[:channel_mappings].find.to_a
-        list.each do |a|
-          ans=a["#{item}"]
-          if (arr_elements.include? ans) == false
-            arr_elements.insert(-1,ans)
-          end
-        end
-      elsif item == "audience_type" || item == "product_sub_category" || item == "campaign_objectives" || item == "product_sub_category" 
-        list=mongo_client[:"#{item}"].find.to_a
-        arr_elements=Array.new
-        list.each do |l|
-           element=l["#{item}"]
-           arr_elements.insert(-1, element)
-        end
-      end
-      puts arr_elements
-      if (arr_elements - from_json).empty?
-        @flag=0
-        puts "Match found for #{item}"
-      else
-        @flag=1
-        puts "No match for #{item}"
-        break
-      end  
-    end
-  else
-    list=mongo_client[:"#{key}"].find.to_a
-    if api == "get-regions" || api == "get-country-state-mappings" 
-      list.each do |l|
-        l.delete("_id")
-      end
-      arr_elements=list
-    elsif api == "get-age" || api == "get-languages"
-      if api == "get-age"
-        k="age"
-      else
-        k="language"
-      end
-      arr_elements=Array.new
-      list.each do |a|
-        ans=a["#{k}"]
-        if ( arr_elements.include? ans ) == false
-          arr_elements.insert(-1,ans)
-        end
-      end
-    elsif api == "get-campaign-cost"
-      puts list
-      list.each do |l|
-        if l["_id"] == @campaign_id
-          puts "Printing"
-          puts l
-          puts @data
-          puts (l.to_a-@data.to_a)
-          if (l.to_a-@data.to_a).empty?
-            puts "Match"
-            @flag=0
-            break
-          else
-            @flag=1
-          end
-        else
-          @flag=1
-        end
-      end
-    else
-      arr_elements=Array.new
-      if api == "get-industry-types" 
-        key="industry_type"
-      elsif api == "get-org-types"
-        key="organization_type"
-      end
-      list.each do |l|
-         element=l["#{key}"]
-         arr_elements.insert(-1, element)
-      end
-      @data=@data[0]
-    end 
-
-    if api != "get-campaign-cost"
-     puts arr_elements
-     puts @data
-     if (arr_elements - @data).empty?
+if (@data1 - @data2).empty?
        @flag=0
      else
        @flag=1
      end
-
-     puts @flag
-    end
-  end
   Test::Unit::Assertions.assert_equal @flag, 0
 end
 
@@ -622,7 +501,7 @@ When(/^I delete an entry for "([^"]*)"$/) do |arg1|
   Test::Unit::Assertions.assert_equal result.n, 1
 end
 
-### Billing apis
+### Billing apis #####################################################################
 
 When(/^I "([^"]*)" billing info with "([^"]*)"$/) do |operation, type|
   
@@ -1420,18 +1299,15 @@ end
 ############################
 
 def data
-  ct=["Private","Public"]
-  ut=["low-income","high-income"]
-  it=["Apparels","Garments","Advertising"]
   @email=Faker::Internet.free_email
   @password=Faker::Internet.password(6,9)
   @name=Faker::Name.name
   @company_name=Faker::Company.name
   @phone=Faker::Number.number(10)
-  @company_type=ct.shuffle.sample
-  @user_type=ut.shuffle.sample
+  @company_type=getdata("get-org-types", "organization_type")
+  @user_type=getdata("get-audience-type","audience_type")
   @pan_number=Faker::Base.regexify("/[A-Z]{5}[0-9]{4}[A-Z]{1}/")
-  @industry_type=it.shuffle.sample
+  @industry_type=getdata("get-industry-types","industry_type")
 end
 
 When(/^I add entry to create new user with "([^"]*)" data$/) do |type|
@@ -1466,3 +1342,48 @@ When(/^I add entry to create new user with "([^"]*)" data$/) do |type|
     @pan_number=""
   elsif type == "missing_industry_type"
     @industry_type=""
+
+
+
+  
+
+def getdata(type, data)
+  url = "http://#{@server_host}:#{@port_number}/#{type}"
+  output=`curl -X GET -H "Authorization: #{@user_token}" -H "Content-Type: application/json" "#{url}"`
+  response=JSON.parse(output)
+  if type == "get-regions" || type == "get-country-state-mappings"
+    result=response["data"].sample
+    result=result[data]
+  else
+    result=response["data"][data].sample
+  end
+  return result
+end 
+
+def getdata(type, data)
+  url = "http://#{@server_host}:#{@port_number}/#{type}"
+  output=`curl -X GET -H "Authorization: #{@user_token}" -H "Content-Type: application/json" "#{url}"`
+  response=JSON.parse(output)
+  if type == "get-regions" || type == "get-country-state-mappings"
+    result=response["data"].sample
+    result=result[data]
+  else
+    result=response["data"][data].sample
+  end
+  return result
+end 
+  
+def readmongodata(collection, field)
+  mongo_client = Mongo::Client.new($mongo_connect_string)
+  list=mongo_client[:"#{collection}"].find.to_a
+  elements=Array.new
+  list.each do |l|
+    element=l["#{field}"]
+      if !elements.include? element
+        elements.insert(-1, element)
+      end
+  end
+  return elements
+end
+    
+   
