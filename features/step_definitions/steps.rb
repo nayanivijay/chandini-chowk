@@ -310,7 +310,7 @@ end
 
 When(/^I run GET for "([^"]*)"$/) do |api|
   
-  def getdata(type, data)
+  def getapiresponse(type, data)
   url = "http://#{@server_host}:#{@port_number}/#{type}"
   output=`curl -X GET -H "Authorization: #{@user_token}" -H "Content-Type: application/json" "#{url}"`
   response=JSON.parse(output)
@@ -355,7 +355,7 @@ Then(/^I should see correct response for "([^"]*)"$/) do |api|
     key="industry_types"
   end
 
-def readmongodata(collection, field)
+def getmongodata(collection, field)
   mongo_client = Mongo::Client.new($mongo_connect_string)
   list=mongo_client[:"#{collection}"].find.to_a
   elements=Array.new
@@ -1364,26 +1364,21 @@ def getdata(type, data)
   url = "http://#{@server_host}:#{@port_number}/#{type}"
   output=`curl -X GET -H "Authorization: #{@user_token}" -H "Content-Type: application/json" "#{url}"`
   response=JSON.parse(output)
+  elements=Array.new
   if type == "get-regions" || type == "get-country-state-mappings"
     result=response["data"].sample
-    result=result[data]
+    puts result
+    res = data.split(",")
+    res.each do |l|
+      element=result[l]
+      elements.insert(-1, element)
+    end
+    return elements
   else
     result=response["data"][data].sample
   end
   return result
 end 
-  
-def readmongodata(collection, field)
-  mongo_client = Mongo::Client.new($mongo_connect_string)
-  list=mongo_client[:"#{collection}"].find.to_a
-  elements=Array.new
-  list.each do |l|
-    element=l["#{field}"]
-      if !elements.include? element
-        elements.insert(-1, element)
-      end
-  end
-  return elements
-end
+
     
    
